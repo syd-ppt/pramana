@@ -1,0 +1,57 @@
+[project]
+name = "pramana"
+version = "0.1.0"
+description = "CLI tool for running LLM drift detection evaluations"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Pramana Contributors"}
+]
+keywords = ["llm", "testing", "evaluation", "drift-detection", "ai-quality"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing",
+]
+dependencies = [
+    "click>=8.1.7",
+    "pydantic>=2.5.0",
+    "httpx>=0.26.0",
+    "rich>=13.7.0",
+    "openai>=1.10.0",
+    "anthropic>=0.18.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.2.0",
+]
+subscription = [
+    "claude-agent-sdk>=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/syd-ppt/pramana"
+Documentation = "https://github.com/syd-ppt/pramana#readme"
+Repository = "https://github.com/syd-ppt/pramana"
+Issues = "https://github.com/syd-ppt/pramana/issues"
+
+[project.scripts]
+pramana = "pramana.cli:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
