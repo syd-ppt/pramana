@@ -286,7 +286,8 @@ class TestSubmitCommand:
         result = runner.invoke(cli, ["submit", str(results_file)])
 
         assert result.exit_code == 0
-        assert "Submitted successfully" in result.output
+        assert "Submitted" in result.output
+        assert "results" in result.output
         mock_submit.assert_called_once()
 
     @patch("pramana.cli.submit_results", new_callable=AsyncMock)
@@ -303,12 +304,13 @@ class TestSubmitCommand:
         results_file = tmp_path / "results.json"
         results_file.write_text('{"status": "test"}')
 
-        mock_submit.return_value = {"status": "accepted", "id": "123"}
+        mock_submit.return_value = {"status": "accepted", "submitted": 1}
 
         result = runner.invoke(cli, ["submit", str(results_file)])
 
         assert result.exit_code == 0
-        assert "Submitted successfully" in result.output
+        assert "Submitted" in result.output
+        assert "results" in result.output
 
     @patch("pramana.cli.submit_results", new_callable=AsyncMock)
     def test_submit_with_custom_api_url(self, mock_submit, runner, tmp_path):
