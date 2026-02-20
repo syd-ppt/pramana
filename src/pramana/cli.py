@@ -126,7 +126,9 @@ async def _run_async(tier, model, output, temperature, seed, offline, api_key, u
     console.print(f"\n[green]Results saved to: {output_path}[/green]")
 
     if not offline:
-        console.print(f"\n[yellow]Note: Use 'pramana submit {output_path}' to upload results[/yellow]")
+        console.print(
+            f"\n[yellow]Note: Use 'pramana submit {output_path}' to upload results[/yellow]"
+        )
 
 
 @cli.command()
