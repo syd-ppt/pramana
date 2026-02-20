@@ -10,12 +10,15 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from pramana import auth
-from pramana.models import detect_provider, get_example_models
+from pramana.models import detect_provider
 from pramana.providers.registry import list_unavailable_hints, resolve_provider
 from pramana.runner import run_eval
 from pramana.submitter import submit_results
 
 console = Console()
+
+# Suite directory lives inside the package
+_SUITES_DIR = Path(__file__).parent / "suites" / "v1.0"
 
 
 @click.group()
@@ -30,7 +33,7 @@ def cli():
 @click.option(
     "--model",
     required=True,
-    help=f"Model ID (e.g., {', '.join(get_example_models())})",
+    help="Model ID (e.g., gpt-4o, claude-opus-4-6, gemini-2.5-pro)",
 )
 @click.option("--output", type=click.Path(), default="results.json", help="Output file path")
 @click.option("--temperature", type=float, default=0.0, help="Temperature (default: 0)")
@@ -51,7 +54,7 @@ def run(tier, model, output, temperature, seed, offline, api_key, use_subscripti
 async def _run_async(tier, model, output, temperature, seed, offline, api_key, use_subscription):
     """Async implementation of run command."""
     # Determine suite path
-    suite_path = Path(__file__).parent.parent.parent / "suites" / "v1.0" / f"{tier}.jsonl"
+    suite_path = _SUITES_DIR / f"{tier}.jsonl"
     if not suite_path.exists():
         console.print(f"[red]Suite not found: {suite_path}[/red]")
         sys.exit(1)
@@ -110,8 +113,11 @@ async def _run_async(tier, model, output, temperature, seed, offline, api_key, u
 
     # Display results
     passed = results.summary.passed
+    skipped = results.summary.skipped
     total = results.summary.total
     console.print(f"\n[green]✓[/green] Completed: {passed}/{total} passed")
+    if skipped:
+        console.print(f"[yellow]Skipped: {skipped} (unimplemented assertion types)[/yellow]")
     console.print(f"[cyan]Pass rate: {results.summary.pass_rate:.1%}[/cyan]")
 
     # Save results
