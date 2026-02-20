@@ -44,8 +44,7 @@ class ClaudeCodeProvider(BaseProvider):
                             block.text for block in msg.content if hasattr(block, "text")
                         )
         except Exception as e:
-            if response_text is None:
-                raise RuntimeError(f"Claude Code query failed: {e}") from e
+            raise RuntimeError(f"Claude Code query failed: {e}") from e
 
         if response_text is None:
             raise RuntimeError("No response received from Claude Code")

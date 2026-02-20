@@ -6,8 +6,9 @@ from pathlib import Path
 
 from pramana import __version__
 from pramana.assertions import evaluate_assertion
-from pramana.hash import hash_output, hash_suite
+from pramana.hash import hash_result, hash_suite
 from pramana.protocol import (
+    AssertionResult,
     EvalResults,
     RunMetadata,
     RunSummary,
@@ -43,10 +44,16 @@ async def run_eval(
 
     # Compute summary
     passed = sum(1 for r in results if r.assertion_result.passed)
+    skipped = sum(
+        1 for r in results if r.assertion_result.details.get("skipped", False)
+    )
+    total = len(results)
+    scoreable = total - skipped
     summary = RunSummary(
-        total=len(results),
+        total=total,
         passed=passed,
-        pass_rate=passed / len(results) if results else 0.0,
+        skipped=skipped,
+        pass_rate=passed / scoreable if scoreable else 0.0,
     )
 
     # Create metadata
@@ -94,11 +101,16 @@ async def _run_test(
             output=output,
             ideal=test_case.ideal,
         )
+    except NotImplementedError as e:
+        assertion_result = AssertionResult(
+            passed=False,
+            details={"skipped": True, "reason": str(e)},
+        )
     except Exception as e:
         raise RuntimeError(f"Assertion failed for test {test_case.id}: {e}") from e
 
     # Compute hash
-    result_hash = hash_output(output)
+    result_hash = hash_result(provider.model_id, test_case.id, output)
 
     return TestResult(
         test_id=test_case.id,

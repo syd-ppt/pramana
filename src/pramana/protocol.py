@@ -93,6 +93,7 @@ class RunSummary(BaseModel):
 
     total: int
     passed: int
+    skipped: int = 0
     pass_rate: float
 
 

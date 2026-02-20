@@ -46,13 +46,13 @@ Pramana auto-detects how to reach your model — just set an API key or install 
 ```bash
 # API mode (auto-detected from env vars)
 export OPENAI_API_KEY=sk-...
-pramana run --tier cheap --model gpt-4
+pramana run --tier cheap --model gpt-4o
 
 # Subscription mode (auto-detected when claude-agent-sdk is installed)
 pramana run --tier cheap --model claude-opus-4-6
 
 # Explicit flags still work
-pramana run --tier cheap --model gpt-4 --api-key sk-...
+pramana run --tier cheap --model gpt-4o --api-key sk-...
 pramana run --tier cheap --model claude-opus-4-6 --use-subscription
 ```
 
