@@ -148,7 +148,7 @@ The following needs to be implemented in the `pramana-api` private repository:
 
 4. **Personalized dashboard** (`/app/my-stats/page.tsx`)
    - "You vs Crowd" statistics
-   - DuckDB-WASM queries filtered by user_id
+   - PyArrow aggregation filtered by user_id
 
 5. **GDPR compliance** (`/api/routes/user.py`)
    - `DELETE /user/me` endpoint

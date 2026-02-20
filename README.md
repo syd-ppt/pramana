@@ -230,7 +230,7 @@ Submit a PR with your additions!
 - [x] GDPR compliance (deletion & anonymization)
 - [ ] Additional providers (Google, Cohere, Mistral)
 - [ ] Custom test suite support
-- [ ] Personalized dashboard with DuckDB-WASM queries
+- [ ] Personalized dashboard with PyArrow aggregation
 - [ ] LLM judge assertions
 - [ ] Semantic similarity assertions
 
