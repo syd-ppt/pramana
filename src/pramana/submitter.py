@@ -95,9 +95,14 @@ async def submit_results(
     payloads = _build_per_result_payloads(results_data)
     submit_url = f"{api_url}/api/submit"
 
+    semaphore = asyncio.Semaphore(10)
+
+    async def _limited(p: dict) -> dict:
+        async with semaphore:
+            return await _post_single(client, submit_url, p, headers)
+
     async with httpx.AsyncClient(timeout=httpx.Timeout(timeout)) as client:
-        tasks = [_post_single(client, submit_url, p, headers) for p in payloads]
-        responses = await asyncio.gather(*tasks)
+        responses = await asyncio.gather(*[_limited(p) for p in payloads])
 
     submitted = len(responses)
     duplicates = sum(1 for r in responses if r.get("status") == "duplicate")
@@ -119,4 +124,5 @@ async def submit_batch(results: list[dict], api_url: str | None = None) -> list[
     if api_url is None:
         api_url = get_api_url()
 
-    return [await submit_results(result, api_url) for result in results]
+    tasks = [submit_results(result, api_url) for result in results]
+    return await asyncio.gather(*tasks)
