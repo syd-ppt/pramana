@@ -1,0 +1,29 @@
+[suite]
+version = "v1.0"
+created = "2026-02-10"
+description = "Initial Pramana eval test suites"
+
+[tiers.cheap]
+file = "cheap.jsonl"
+test_count = 10
+estimated_cost_usd = 0.05
+estimated_tokens = 350
+description = "Basic coverage: math, factual, safety, instruction following"
+
+[tiers.moderate]
+file = "moderate.jsonl"
+test_count = 25
+estimated_cost_usd = 0.25
+estimated_tokens = 950
+description = "Expanded coverage: coding, reasoning, multi-category"
+
+[tiers.comprehensive]
+file = "comprehensive.jsonl"
+test_count = 75
+estimated_cost_usd = 1.50
+estimated_tokens = 2800
+description = "Full coverage across all categories with edge cases"
+
+[metadata]
+categories = ["reasoning", "factual", "instruction_following", "coding", "safety", "creative"]
+assertion_types = ["exact_match", "contains", "contains_any", "is_json", "llm_judge", "semantic_similarity"]

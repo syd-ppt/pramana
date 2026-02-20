@@ -184,7 +184,7 @@ class TestRunCommand:
         """Should run eval with API key."""
         # Mock run_eval response
         mock_run_eval.return_value = MagicMock(
-            summary=MagicMock(total=1, passed=1, pass_rate=1.0),
+            summary=MagicMock(total=1, passed=1, skipped=0, pass_rate=1.0),
             model_dump_json=MagicMock(return_value='{"status": "ok"}')
         )
 
@@ -225,7 +225,7 @@ class TestRunCommand:
         )
 
         mock_run_eval.return_value = MagicMock(
-            summary=MagicMock(total=1, passed=1, pass_rate=1.0),
+            summary=MagicMock(total=1, passed=1, skipped=0, pass_rate=1.0),
             model_dump_json=MagicMock(return_value='{"status": "ok"}')
         )
 
@@ -252,7 +252,7 @@ class TestRunCommand:
     def test_run_offline_mode(self, mock_run_eval, runner, tmp_path):
         """Should run in offline mode (no submission)."""
         mock_run_eval.return_value = MagicMock(
-            summary=MagicMock(total=1, passed=1, pass_rate=1.0),
+            summary=MagicMock(total=1, passed=1, skipped=0, pass_rate=1.0),
             model_dump_json=MagicMock(return_value='{"status": "ok"}')
         )
 
