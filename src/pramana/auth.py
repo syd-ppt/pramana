@@ -1,6 +1,7 @@
 """CLI authentication - browser-based token flow."""
 
 import json
+import stat
 import webbrowser
 from pathlib import Path
 
@@ -62,9 +63,11 @@ def load_config() -> dict | None:
 
 
 def save_config(config: dict) -> None:
-    """Save user config."""
+    """Save user config with restricted permissions."""
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    CONFIG_DIR.chmod(stat.S_IRWXU)  # 0o700 — owner only
     CONFIG_FILE.write_text(json.dumps(config, indent=2))
+    CONFIG_FILE.chmod(stat.S_IRUSR | stat.S_IWUSR)  # 0o600 — owner read/write
 
 
 def update_config(key: str, value: str) -> None:
