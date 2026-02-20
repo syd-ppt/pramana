@@ -126,7 +126,9 @@ async def _run_async(tier, model, output, temperature, seed, offline, api_key, u
     console.print(f"\n[green]Results saved to: {output_path}[/green]")
 
     if not offline:
-        console.print("\n[yellow]Note: Use 'pramana submit' to upload results[/yellow]")
+        console.print(
+            f"\n[yellow]Note: Use 'pramana submit {output_path}' to upload results[/yellow]"
+        )
 
 
 @cli.command()
@@ -173,11 +175,12 @@ async def _submit_async(results_file, api_url):
 
     try:
         response = await submit_results(results_data, api_url)
-        console.print("[green]✓[/green] Submitted successfully")
-        console.print(f"Status: {response.get('status', 'unknown')}")
+        submitted = response.get("submitted", 0)
+        duplicates = response.get("duplicates", 0)
+        console.print(f"[green]✓[/green] Submitted {submitted} results")
 
-        if response.get("status") == "duplicate":
-            console.print("[yellow]Note: Some results were duplicates[/yellow]")
+        if duplicates:
+            console.print(f"[yellow]Note: {duplicates} duplicate(s) already on server[/yellow]")
 
     except Exception as e:
         console.print(f"[red]Submission failed: {e}[/red]")
