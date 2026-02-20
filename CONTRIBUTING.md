@@ -1,5 +1,25 @@
 # Contributing to Pramana
 
+## Scope — Read This First
+
+Pramana is intentionally simple. The entire system is:
+
+1. **CLI** (this repo) runs prompts against LLMs and submits results
+2. **API** (`pramana-api`) writes each submission as a single Parquet file to Backblaze B2
+3. **Dashboard** (`pramana-api`) reads those files back, aggregates with PyArrow, and renders charts
+
+There is no database, no cache, no queue. Storage is append-only Parquet on B2.
+
+| Repo | Scope |
+|------|-------|
+| **`pramana`** (this repo) | CLI — prompt execution, eval logic, providers, assertions, submission client |
+| **`pramana-api`** | Server — submission endpoint, B2 storage, PyArrow aggregation, Next.js dashboard |
+
+**PRs that add backend features, storage logic, or dashboard code to this repo will be closed.**
+PRs that introduce infrastructure beyond the architecture above (ORMs, databases, caching layers, message queues) are out of scope for both repos.
+
+If you're unsure which repo your change belongs in, open an issue first — happy to point you the right way.
+
 ## Adding Test Cases
 
 Test cases are the core of Pramana. High-quality, diverse tests improve drift detection.
