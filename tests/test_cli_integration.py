@@ -331,11 +331,14 @@ class TestSubmitCommand:
         call_args = mock_submit.call_args
         assert call_args[0][1] == "https://custom.example.com"
 
-    def test_submit_nonexistent_file(self, runner):
-        """Should fail with nonexistent file."""
-        result = runner.invoke(cli, ["submit", "/tmp/nonexistent.json"])
+    def test_submit_nonexistent_file(self, runner, tmp_path):
+        """Should suggest running pramana run first."""
+        missing = tmp_path / "nonexistent.json"
+        result = runner.invoke(cli, ["submit", str(missing)])
 
-        assert result.exit_code != 0
+        assert result.exit_code == 0
+        assert "No results file found" in result.output
+        assert "pramana run" in result.output
 
     @patch("pramana.cli.submit_results", new_callable=AsyncMock)
     def test_submit_multiple_blocks(self, mock_submit, runner, tmp_path):

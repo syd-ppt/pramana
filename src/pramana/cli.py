@@ -156,7 +156,7 @@ def models(refresh):
 
 
 @cli.command()
-@click.argument("results_file", type=click.Path(exists=True))
+@click.argument("results_file", type=click.Path())
 @click.option("--api-url", default=None, help="API endpoint URL (default: from login config or https://pramana-eval.vercel.app)")
 def submit(results_file, api_url):
     """Submit results to Pramana platform."""
@@ -169,10 +169,15 @@ def submit(results_file, api_url):
 async def _submit_async(results_file, api_url):
     """Async implementation of submit command — drains blocks one-by-one."""
     path = Path(results_file)
+
+    if not path.exists():
+        console.print("[yellow]No results file found. Run 'pramana run' first.[/yellow]")
+        return
+
     blocks = load_results(path)
 
     if not blocks:
-        console.print("[yellow]No results to submit.[/yellow]")
+        console.print("[yellow]No results to submit. Run 'pramana run' first.[/yellow]")
         return
 
     total = len(blocks)
