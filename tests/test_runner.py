@@ -98,8 +98,8 @@ async def test_run_eval_mixed_results(tmp_path, basic_test_cases):
 
 
 @pytest.mark.asyncio
-async def test_run_eval_skipped_not_implemented(tmp_path):
-    """NotImplementedError assertions are skipped, not crashed."""
+async def test_run_eval_llm_judge_pass(tmp_path):
+    """LLM judge assertion passes when judge responds YES."""
     test_cases = [
         {
             "id": "test-001",
@@ -126,20 +126,51 @@ async def test_run_eval_skipped_not_implemented(tmp_path):
         "What is 2+2?": "42",
         "Write a haiku": "cherry blossoms fall / gently on the stream / spring",
     })
+    # The judge call sends a prompt containing the output; mock returns YES
+    provider._default_response = "YES"
 
     results = await run_eval(suite, provider)
 
     assert results.summary.total == 2
-    assert results.summary.passed == 1
-    assert results.summary.skipped == 1
-    # pass_rate is calculated against scoreable (non-skipped) tests
+    assert results.summary.passed == 2
+    assert results.summary.skipped == 0
     assert results.summary.pass_rate == 1.0
 
-    # Verify the skipped test has correct details
     llm_result = [r for r in results.results if r.test_id == "test-llm"][0]
+    assert llm_result.assertion_result.passed is True
+    assert llm_result.assertion_result.details["judge_verdict"] == "YES"
+
+
+@pytest.mark.asyncio
+async def test_run_eval_llm_judge_fail(tmp_path):
+    """LLM judge assertion fails when judge responds NO."""
+    test_cases = [
+        {
+            "id": "test-llm",
+            "category": "creative",
+            "input": "Write a haiku",
+            "ideal": None,
+            "assertion": {
+                "type": "llm_judge",
+                "judge_prompt": "Is this a haiku?",
+            },
+            "metadata": {"difficulty": "medium", "tokens_est": 50},
+        },
+    ]
+    suite = _make_suite(tmp_path, test_cases)
+    provider = MockProvider(responses={
+        "Write a haiku": "this is not a haiku at all",
+    })
+    provider._default_response = "NO"
+
+    results = await run_eval(suite, provider)
+
+    assert results.summary.total == 1
+    assert results.summary.passed == 0
+
+    llm_result = results.results[0]
     assert llm_result.assertion_result.passed is False
-    assert llm_result.assertion_result.details["skipped"] is True
-    assert "not yet implemented" in llm_result.assertion_result.details["reason"]
+    assert llm_result.assertion_result.details["judge_verdict"] == "NO"
 
 
 @pytest.mark.asyncio
