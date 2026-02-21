@@ -48,7 +48,7 @@ class OpenAIProvider(BaseProvider):
             messages=messages,
             temperature=temperature,
             seed=seed,
-            max_tokens=1000,
+            max_completion_tokens=1000,
         )
 
         latency_ms = int(time.time() * 1000) - start_ms
