@@ -6,7 +6,14 @@ from pathlib import Path
 
 import click
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
 
 from pramana import auth
 from pramana.models import detect_provider
@@ -95,21 +102,32 @@ async def _run_async(tier, model, output, temperature, seed, offline, api_key, u
     # Run evals
     console.print(f"[cyan]Running {tier} suite against {model}...[/cyan]")
 
+    # Count tests upfront for progress bar
+    test_count = sum(1 for line in suite_path.read_text().strip().split("\n") if line.strip())
+
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TimeElapsedColumn(),
         console=console,
     ) as progress:
-        task = progress.add_task("Executing tests...", total=None)
+        task = progress.add_task("Running tests", total=test_count)
+
+        def on_progress(completed: int, total: int, result) -> None:
+            passed = result.assertion_result.passed
+            status = "[green]pass[/green]" if passed else "[red]fail[/red]"
+            desc = f"Test {result.test_id} {status}"
+            progress.update(task, completed=completed, description=desc)
 
         results = await run_eval(
             suite_path=suite_path,
             provider=provider,
             temperature=temperature,
             seed=seed,
+            on_progress=on_progress,
         )
-
-        progress.update(task, completed=True)
 
     # Display results
     passed = results.summary.passed
@@ -191,15 +209,18 @@ async def _submit_async(results_file, api_url):
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TimeElapsedColumn(),
         console=console,
     ) as progress:
-        task = progress.add_task("Uploading...", total=None)
+        task = progress.add_task("Uploading...", total=total)
 
         for i in range(total):
             # Always read index 0 — previous block was removed on success
             block = load_results(path)[0]
             model_id = block.get("run_metadata", {}).get("model_id", "unknown")
-            desc = f"Uploading run {i + 1}/{total} (model: {model_id})..."
+            desc = f"Uploading run {i + 1}/{total} (model: {model_id})"
             progress.update(task, description=desc)
 
             try:
@@ -207,6 +228,7 @@ async def _submit_async(results_file, api_url):
                 total_submitted += response.get("submitted", 0)
                 total_duplicates += response.get("duplicates", 0)
                 remove_run(path, 0)
+                progress.update(task, completed=i + 1)
             except Exception as e:
                 progress.stop()
                 remaining = total - i
