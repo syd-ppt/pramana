@@ -209,15 +209,18 @@ async def _submit_async(results_file, api_url):
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TimeElapsedColumn(),
         console=console,
     ) as progress:
-        task = progress.add_task("Uploading...", total=None)
+        task = progress.add_task("Uploading...", total=total)
 
         for i in range(total):
             # Always read index 0 — previous block was removed on success
             block = load_results(path)[0]
             model_id = block.get("run_metadata", {}).get("model_id", "unknown")
-            desc = f"Uploading run {i + 1}/{total} (model: {model_id})..."
+            desc = f"Uploading run {i + 1}/{total} (model: {model_id})"
             progress.update(task, description=desc)
 
             try:
@@ -225,6 +228,7 @@ async def _submit_async(results_file, api_url):
                 total_submitted += response.get("submitted", 0)
                 total_duplicates += response.get("duplicates", 0)
                 remove_run(path, 0)
+                progress.update(task, completed=i + 1)
             except Exception as e:
                 progress.stop()
                 remaining = total - i
