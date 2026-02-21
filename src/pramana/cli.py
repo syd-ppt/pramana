@@ -6,7 +6,7 @@ from pathlib import Path
 
 import click
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 from pramana import auth
 from pramana.models import detect_provider
@@ -95,21 +95,30 @@ async def _run_async(tier, model, output, temperature, seed, offline, api_key, u
     # Run evals
     console.print(f"[cyan]Running {tier} suite against {model}...[/cyan]")
 
+    # Count tests upfront for progress bar
+    test_count = sum(1 for line in suite_path.read_text().strip().split("\n") if line.strip())
+
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TimeElapsedColumn(),
         console=console,
     ) as progress:
-        task = progress.add_task("Executing tests...", total=None)
+        task = progress.add_task("Running tests", total=test_count)
+
+        def on_progress(completed: int, total: int, result) -> None:
+            status = "[green]pass[/green]" if result.assertion_result.passed else "[red]fail[/red]"
+            progress.update(task, completed=completed, description=f"Test {result.test_id} {status}")
 
         results = await run_eval(
             suite_path=suite_path,
             provider=provider,
             temperature=temperature,
             seed=seed,
+            on_progress=on_progress,
         )
-
-        progress.update(task, completed=True)
 
     # Display results
     passed = results.summary.passed
