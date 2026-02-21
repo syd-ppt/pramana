@@ -44,7 +44,7 @@ def test_detect_provider_anthropic():
 
 def test_detect_provider_google():
     """Should detect Google models."""
-    assert detect_provider("gemini-3-flash") == "google"
+    assert detect_provider("gemini-3-flash-preview") == "google"
     assert detect_provider("gemini-2.5-pro") == "google"
 
 
@@ -78,7 +78,7 @@ def test_fallback_models_structure():
     # Should contain current Feb 2026 models
     assert "gpt-5.2" in FALLBACK_MODELS["openai"]
     assert "claude-opus-4.6" in FALLBACK_MODELS["anthropic"]
-    assert "gemini-3-flash" in FALLBACK_MODELS["google"]
+    assert "gemini-3-flash-preview" in FALLBACK_MODELS["google"]
 
 
 def test_cache_behavior():
