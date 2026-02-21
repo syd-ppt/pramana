@@ -1,11 +1,17 @@
 """Result submission to API."""
 
 import asyncio
+import logging
 import os
 
 import httpx
 
 from pramana import auth
+
+logger = logging.getLogger(__name__)
+
+MAX_RETRIES = 5
+INITIAL_BACKOFF = 1.0
 
 # Default API endpoint (configurable via PRAMANA_API_URL env var)
 DEFAULT_API_URL = "https://pramana-eval.vercel.app"
@@ -52,20 +58,39 @@ async def _post_single(
     payload: dict,
     headers: dict,
 ) -> dict:
-    """POST a single result and return parsed response or error detail."""
-    response = await client.post(url, json=payload, headers=headers)
-    if response.status_code == 422:
-        try:
-            detail = response.json()
-        except Exception:
-            detail = response.text
-        raise httpx.HTTPStatusError(
-            f"422 Unprocessable Entity for prompt_id={payload.get('prompt_id')}: {detail}",
-            request=response.request,
-            response=response,
-        )
-    response.raise_for_status()
-    return response.json()
+    """POST a single result with retry on 429 rate limits."""
+    backoff = INITIAL_BACKOFF
+
+    for attempt in range(MAX_RETRIES + 1):
+        response = await client.post(url, json=payload, headers=headers)
+
+        if response.status_code == 429:
+            if attempt == MAX_RETRIES:
+                response.raise_for_status()
+            retry_after = float(response.headers.get("Retry-After", backoff))
+            logger.info(
+                "Rate limited (429), retrying in %.1fs (attempt %d/%d)",
+                retry_after, attempt + 1, MAX_RETRIES,
+            )
+            await asyncio.sleep(retry_after)
+            backoff = min(backoff * 2, 60.0)
+            continue
+
+        if response.status_code == 422:
+            try:
+                detail = response.json()
+            except Exception:
+                detail = response.text
+            raise httpx.HTTPStatusError(
+                f"422 Unprocessable Entity for prompt_id={payload.get('prompt_id')}: {detail}",
+                request=response.request,
+                response=response,
+            )
+        response.raise_for_status()
+        return response.json()
+
+    # Unreachable — loop always returns or raises — but satisfies type checker
+    raise RuntimeError("Exhausted retries")
 
 
 async def submit_results(
@@ -95,7 +120,7 @@ async def submit_results(
     payloads = _build_per_result_payloads(results_data)
     submit_url = f"{api_url}/api/submit"
 
-    semaphore = asyncio.Semaphore(10)
+    semaphore = asyncio.Semaphore(5)
 
     async def _limited(p: dict) -> dict:
         async with semaphore:
