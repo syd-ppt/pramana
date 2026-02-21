@@ -1,13 +1,10 @@
 """Unit tests for pramana.storage module."""
 
-from __future__ import annotations
-
 import json
 
 import pytest
 
 from pramana.storage import append_result, load_results, remove_run
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

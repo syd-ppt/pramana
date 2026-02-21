@@ -123,7 +123,9 @@ async def _run_async(tier, model, output, temperature, seed, offline, api_key, u
     # Save results (append to existing blocks)
     output_path = Path(output)
     block_count = append_result(output_path, results)
-    console.print(f"\n[green]Results saved to: {output_path}[/green] ({block_count} pending run(s))")
+    console.print(
+        f"\n[green]Results saved to: {output_path}[/green] ({block_count} pending run(s))"
+    )
 
     if not offline:
         console.print(
@@ -197,7 +199,8 @@ async def _submit_async(results_file, api_url):
             # Always read index 0 — previous block was removed on success
             block = load_results(path)[0]
             model_id = block.get("run_metadata", {}).get("model_id", "unknown")
-            progress.update(task, description=f"Uploading run {i + 1}/{total} (model: {model_id})...")
+            desc = f"Uploading run {i + 1}/{total} (model: {model_id})..."
+            progress.update(task, description=desc)
 
             try:
                 response = await submit_results(block, api_url)
