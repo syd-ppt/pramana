@@ -80,8 +80,10 @@ def _strip_markdown_fences(text: str) -> str:
     stripped = text.strip()
     if stripped.startswith("```"):
         # Remove opening fence (with optional language tag)
-        first_newline = stripped.index("\n")
-        stripped = stripped[first_newline + 1:]
+        newline_idx = stripped.find("\n")
+        if newline_idx == -1:
+            return stripped[3:].strip()
+        stripped = stripped[newline_idx + 1:]
     if stripped.endswith("```"):
         stripped = stripped[:-3]
     return stripped.strip()
