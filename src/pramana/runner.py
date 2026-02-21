@@ -1,6 +1,9 @@
 """Core eval execution logic."""
 
+from __future__ import annotations
+
 import json
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -24,6 +27,7 @@ async def run_eval(
     provider: BaseProvider,
     temperature: float = 0.0,
     seed: int = 42,
+    on_progress: Callable[[int, int, TestResult], None] | None = None,
 ) -> EvalResults:
     """Execute eval suite against provider."""
     # Load test cases
@@ -38,10 +42,13 @@ async def run_eval(
     suite_version = f"v1.0-{suite_path.stem}"
 
     # Run tests
+    total = len(test_cases)
     results = []
-    for test_case in test_cases:
+    for i, test_case in enumerate(test_cases):
         result = await _run_test(test_case, provider, temperature, seed)
         results.append(result)
+        if on_progress is not None:
+            on_progress(i + 1, total, result)
 
     # Compute summary
     passed = sum(1 for r in results if r.assertion_result.passed)
