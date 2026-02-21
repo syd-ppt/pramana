@@ -6,7 +6,14 @@ from pathlib import Path
 
 import click
 from rich.console import Console
-from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
 
 from pramana import auth
 from pramana.models import detect_provider
@@ -109,8 +116,10 @@ async def _run_async(tier, model, output, temperature, seed, offline, api_key, u
         task = progress.add_task("Running tests", total=test_count)
 
         def on_progress(completed: int, total: int, result) -> None:
-            status = "[green]pass[/green]" if result.assertion_result.passed else "[red]fail[/red]"
-            progress.update(task, completed=completed, description=f"Test {result.test_id} {status}")
+            passed = result.assertion_result.passed
+            status = "[green]pass[/green]" if passed else "[red]fail[/red]"
+            desc = f"Test {result.test_id} {status}"
+            progress.update(task, completed=completed, description=desc)
 
         results = await run_eval(
             suite_path=suite_path,
