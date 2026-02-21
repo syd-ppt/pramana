@@ -75,10 +75,30 @@ def _contains_any(
     return AssertionResult(passed=False, details={"terms": terms})
 
 
+def _strip_markdown_fences(text: str) -> str:
+    """Strip markdown code fences from output."""
+    stripped = text.strip()
+    if stripped.startswith("```"):
+        # Remove opening fence (with optional language tag)
+        first_newline = stripped.index("\n")
+        stripped = stripped[first_newline + 1:]
+    if stripped.endswith("```"):
+        stripped = stripped[:-3]
+    return stripped.strip()
+
+
 def _is_json(assertion: Assertion, output: str, ideal: Any = None) -> AssertionResult:
     """Check if output is valid JSON."""
+    text = output.strip()
     try:
-        parsed = json.loads(output.strip())
+        parsed = json.loads(text)
+        return AssertionResult(passed=True, details={"parsed": True, "type": type(parsed).__name__})
+    except json.JSONDecodeError:
+        pass
+
+    # Retry after stripping markdown code fences
+    try:
+        parsed = json.loads(_strip_markdown_fences(text))
         return AssertionResult(passed=True, details={"parsed": True, "type": type(parsed).__name__})
     except json.JSONDecodeError as e:
         return AssertionResult(passed=False, details={"error": str(e)})
