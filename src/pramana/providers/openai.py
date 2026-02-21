@@ -1,5 +1,6 @@
 """OpenAI API provider."""
 
+import logging
 import os
 import time
 
@@ -9,6 +10,11 @@ from openai import AsyncOpenAI
 
 from pramana.providers.base import BaseProvider
 from pramana.providers.registry import register
+
+logger = logging.getLogger(__name__)
+
+# Models that reject temperature/seed — learned at runtime, avoids repeat 400s
+_UNSUPPORTED_PARAMS_MODELS: set[str] = set()
 
 
 @register("openai", "api", env_key="OPENAI_API_KEY")
@@ -47,15 +53,26 @@ class OpenAIProvider(BaseProvider):
         kwargs: dict[str, object] = {
             "model": self.model_id,
             "messages": messages,
-            "temperature": temperature,
-            "seed": seed,
             "max_completion_tokens": 1000,
         }
+
+        if self.model_id in _UNSUPPORTED_PARAMS_MODELS:
+            # Already know this model rejects temperature/seed
+            pass
+        else:
+            kwargs["temperature"] = temperature
+            kwargs["seed"] = seed
 
         try:
             response = await self.client.chat.completions.create(**kwargs)  # type: ignore[arg-type]
         except openai.BadRequestError as exc:
             if "temperature" in str(exc) or "seed" in str(exc):
+                _UNSUPPORTED_PARAMS_MODELS.add(self.model_id)
+                logger.warning(
+                    "Model %s rejected temperature/seed params — "
+                    "results will NOT be reproducible",
+                    self.model_id,
+                )
                 kwargs.pop("temperature", None)
                 kwargs.pop("seed", None)
                 response = await self.client.chat.completions.create(**kwargs)  # type: ignore[arg-type]
