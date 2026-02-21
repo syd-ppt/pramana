@@ -276,23 +276,24 @@ class TestSubmitCommand:
 
     @patch("pramana.cli.submit_results", new_callable=AsyncMock)
     def test_submit_anonymous(self, mock_submit, runner, tmp_path, temp_config):
-        """Should submit results anonymously."""
-        # Create fake results file
+        """Should submit a single-block file and delete it after drain."""
         results_file = tmp_path / "results.json"
-        results_file.write_text('{"status": "test"}')
+        block = {"run_metadata": {"model_id": "gpt-4"}, "results": []}
+        results_file.write_text(json.dumps([block]))
 
         mock_submit.return_value = {"status": "accepted", "submitted": 1}
 
         result = runner.invoke(cli, ["submit", str(results_file)])
 
         assert result.exit_code == 0
-        assert "Submitted 1 results" in result.output
+        assert "Submitted 1 results from 1 run(s)" in result.output
         mock_submit.assert_called_once()
+        # File deleted after all blocks drained
+        assert not results_file.exists()
 
     @patch("pramana.cli.submit_results", new_callable=AsyncMock)
     def test_submit_authenticated(self, mock_submit, runner, tmp_path, temp_config):
         """Should submit with authentication."""
-        # Set up logged in state
         config_dir, config_file = temp_config
         config_dir.mkdir(parents=True, exist_ok=True)
         config_file.write_text(json.dumps({
@@ -301,22 +302,24 @@ class TestSubmitCommand:
         }))
 
         results_file = tmp_path / "results.json"
-        results_file.write_text('{"status": "test"}')
+        block = {"run_metadata": {"model_id": "gpt-4"}, "results": []}
+        results_file.write_text(json.dumps([block]))
 
         mock_submit.return_value = {"status": "accepted", "submitted": 1}
 
         result = runner.invoke(cli, ["submit", str(results_file)])
 
         assert result.exit_code == 0
-        assert "Submitted 1 results" in result.output
+        assert "Submitted 1 results from 1 run(s)" in result.output
 
     @patch("pramana.cli.submit_results", new_callable=AsyncMock)
     def test_submit_with_custom_api_url(self, mock_submit, runner, tmp_path):
         """Should submit to custom API URL."""
         results_file = tmp_path / "results.json"
-        results_file.write_text('{"status": "test"}')
+        block = {"run_metadata": {"model_id": "gpt-4"}, "results": []}
+        results_file.write_text(json.dumps([block]))
 
-        mock_submit.return_value = {"status": "accepted"}
+        mock_submit.return_value = {"status": "accepted", "submitted": 0}
 
         result = runner.invoke(cli, [
             "submit",
@@ -325,12 +328,85 @@ class TestSubmitCommand:
         ])
 
         assert result.exit_code == 0
-        # Should have called with custom URL
         call_args = mock_submit.call_args
         assert call_args[0][1] == "https://custom.example.com"
 
-    def test_submit_nonexistent_file(self, runner):
-        """Should fail with nonexistent file."""
-        result = runner.invoke(cli, ["submit", "/tmp/nonexistent.json"])
+    def test_submit_nonexistent_file(self, runner, tmp_path):
+        """Should suggest running pramana run first."""
+        missing = tmp_path / "nonexistent.json"
+        result = runner.invoke(cli, ["submit", str(missing)])
 
-        assert result.exit_code != 0
+        assert result.exit_code == 0
+        assert "No results file found" in result.output
+        assert "pramana run" in result.output
+
+    @patch("pramana.cli.submit_results", new_callable=AsyncMock)
+    def test_submit_multiple_blocks(self, mock_submit, runner, tmp_path):
+        """Two blocks submitted, file deleted after drain."""
+        results_file = tmp_path / "results.json"
+        blocks = [
+            {"run_metadata": {"model_id": "gpt-4"}, "results": []},
+            {"run_metadata": {"model_id": "claude-opus-4-6"}, "results": []},
+        ]
+        results_file.write_text(json.dumps(blocks))
+
+        mock_submit.return_value = {"status": "accepted", "submitted": 2}
+
+        result = runner.invoke(cli, ["submit", str(results_file)])
+
+        assert result.exit_code == 0
+        assert "from 2 run(s)" in result.output
+        assert not results_file.exists()
+
+    @patch("pramana.cli.submit_results", new_callable=AsyncMock)
+    def test_submit_partial_failure(self, mock_submit, runner, tmp_path):
+        """3 blocks, 2nd fails — 1st removed, 2 remain in file."""
+        results_file = tmp_path / "results.json"
+        blocks = [
+            {"run_metadata": {"model_id": "a"}, "results": []},
+            {"run_metadata": {"model_id": "b"}, "results": []},
+            {"run_metadata": {"model_id": "c"}, "results": []},
+        ]
+        results_file.write_text(json.dumps(blocks))
+
+        # First call succeeds, second raises
+        mock_submit.side_effect = [
+            {"status": "accepted", "submitted": 1},
+            RuntimeError("network error"),
+        ]
+
+        result = runner.invoke(cli, ["submit", str(results_file)])
+
+        assert result.exit_code == 1
+        assert "2 run(s) remain" in result.output
+        # File still exists with 2 remaining blocks
+        remaining = json.loads(results_file.read_text())
+        assert len(remaining) == 2
+        assert remaining[0]["run_metadata"]["model_id"] == "b"
+
+    @patch("pramana.cli.submit_results", new_callable=AsyncMock)
+    def test_submit_backward_compat(self, mock_submit, runner, tmp_path):
+        """Old single-object format submitted and file deleted."""
+        results_file = tmp_path / "results.json"
+        # Old format: single object, not array
+        results_file.write_text(json.dumps(
+            {"run_metadata": {"model_id": "gpt-4"}, "results": []}
+        ))
+
+        mock_submit.return_value = {"status": "accepted", "submitted": 1}
+
+        result = runner.invoke(cli, ["submit", str(results_file)])
+
+        assert result.exit_code == 0
+        assert "from 1 run(s)" in result.output
+        assert not results_file.exists()
+
+    def test_submit_empty_file(self, runner, tmp_path):
+        """Empty array in file shows no-results message."""
+        results_file = tmp_path / "results.json"
+        results_file.write_text("[]")
+
+        result = runner.invoke(cli, ["submit", str(results_file)])
+
+        assert result.exit_code == 0
+        assert "No results to submit" in result.output

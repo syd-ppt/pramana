@@ -1,7 +1,6 @@
 """Pramana CLI entry point."""
 
 import asyncio
-import json
 import sys
 from pathlib import Path
 
@@ -13,6 +12,7 @@ from pramana import auth
 from pramana.models import detect_provider
 from pramana.providers.registry import list_unavailable_hints, resolve_provider
 from pramana.runner import run_eval
+from pramana.storage import append_result, load_results, remove_run
 from pramana.submitter import submit_results
 
 console = Console()
@@ -120,10 +120,12 @@ async def _run_async(tier, model, output, temperature, seed, offline, api_key, u
         console.print(f"[yellow]Skipped: {skipped} (unimplemented assertion types)[/yellow]")
     console.print(f"[cyan]Pass rate: {results.summary.pass_rate:.1%}[/cyan]")
 
-    # Save results
+    # Save results (append to existing blocks)
     output_path = Path(output)
-    output_path.write_text(results.model_dump_json(indent=2))
-    console.print(f"\n[green]Results saved to: {output_path}[/green]")
+    block_count = append_result(output_path, results)
+    console.print(
+        f"\n[green]Results saved to: {output_path}[/green] ({block_count} pending run(s))"
+    )
 
     if not offline:
         console.print(
@@ -156,7 +158,7 @@ def models(refresh):
 
 
 @cli.command()
-@click.argument("results_file", type=click.Path(exists=True))
+@click.argument("results_file", type=click.Path())
 @click.option("--api-url", default=None, help="API endpoint URL (default: from login config or https://pramana-eval.vercel.app)")
 def submit(results_file, api_url):
     """Submit results to Pramana platform."""
@@ -167,24 +169,55 @@ def submit(results_file, api_url):
 
 
 async def _submit_async(results_file, api_url):
-    """Async implementation of submit command."""
-    # Load results
-    results_data = json.loads(Path(results_file).read_text())
+    """Async implementation of submit command — drains blocks one-by-one."""
+    path = Path(results_file)
 
-    console.print(f"[cyan]Submitting results to {api_url}...[/cyan]")
+    if not path.exists():
+        console.print("[yellow]No results file found. Run 'pramana run' first.[/yellow]")
+        return
 
-    try:
-        response = await submit_results(results_data, api_url)
-        submitted = response.get("submitted", 0)
-        duplicates = response.get("duplicates", 0)
-        console.print(f"[green]✓[/green] Submitted {submitted} results")
+    blocks = load_results(path)
 
-        if duplicates:
-            console.print(f"[yellow]Note: {duplicates} duplicate(s) already on server[/yellow]")
+    if not blocks:
+        console.print("[yellow]No results to submit. Run 'pramana run' first.[/yellow]")
+        return
 
-    except Exception as e:
-        console.print(f"[red]Submission failed: {e}[/red]")
-        sys.exit(1)
+    total = len(blocks)
+    console.print(f"[cyan]Submitting {total} run(s) to {api_url}...[/cyan]")
+
+    total_submitted = 0
+    total_duplicates = 0
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Uploading...", total=None)
+
+        for i in range(total):
+            # Always read index 0 — previous block was removed on success
+            block = load_results(path)[0]
+            model_id = block.get("run_metadata", {}).get("model_id", "unknown")
+            desc = f"Uploading run {i + 1}/{total} (model: {model_id})..."
+            progress.update(task, description=desc)
+
+            try:
+                response = await submit_results(block, api_url)
+                total_submitted += response.get("submitted", 0)
+                total_duplicates += response.get("duplicates", 0)
+                remove_run(path, 0)
+            except Exception as e:
+                progress.stop()
+                remaining = total - i
+                console.print(f"[red]Submission failed on run {i + 1}: {e}[/red]")
+                console.print(f"[yellow]{remaining} run(s) remain in {path}[/yellow]")
+                sys.exit(1)
+
+    console.print(f"[green]✓[/green] Submitted {total_submitted} results from {total} run(s)")
+
+    if total_duplicates:
+        console.print(f"[yellow]Note: {total_duplicates} duplicate(s) already on server[/yellow]")
 
 
 @cli.command()
