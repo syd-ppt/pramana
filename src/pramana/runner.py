@@ -9,6 +9,7 @@ from pramana.assertions import evaluate_assertion
 from pramana.hash import hash_result, hash_suite
 from pramana.protocol import (
     AssertionResult,
+    AssertionType,
     EvalResults,
     RunMetadata,
     RunSummary,
@@ -96,11 +97,18 @@ async def _run_test(
 
     # Evaluate assertion
     try:
-        assertion_result = evaluate_assertion(
-            assertion=test_case.assertion,
-            output=output,
-            ideal=test_case.ideal,
-        )
+        if test_case.assertion.type == AssertionType.LLM_JUDGE:
+            assertion_result = await _evaluate_llm_judge(
+                test_case=test_case,
+                output=output,
+                provider=provider,
+            )
+        else:
+            assertion_result = evaluate_assertion(
+                assertion=test_case.assertion,
+                output=output,
+                ideal=test_case.ideal,
+            )
     except NotImplementedError as e:
         assertion_result = AssertionResult(
             passed=False,
@@ -118,4 +126,38 @@ async def _run_test(
         assertion_result=assertion_result,
         latency_ms=latency_ms,
         result_hash=result_hash,
+    )
+
+
+_JUDGE_SYSTEM_PROMPT = (
+    "You are an evaluation judge. Given a model output and a question about it, "
+    "respond with ONLY 'YES' or 'NO'. Do not explain."
+)
+
+
+async def _evaluate_llm_judge(
+    test_case: TestCase,
+    output: str,
+    provider: BaseProvider,
+) -> AssertionResult:
+    """Evaluate output using LLM as judge."""
+    judge_prompt = test_case.assertion.judge_prompt
+    if not judge_prompt:
+        raise ValueError(f"llm_judge requires judge_prompt for test {test_case.id}")
+
+    prompt = f"Model output:\n{output}\n\nQuestion: {judge_prompt}"
+
+    judge_response, _ = await provider.complete(
+        input_text=prompt,
+        system_prompt=_JUDGE_SYSTEM_PROMPT,
+        temperature=0.0,
+        seed=42,
+    )
+
+    verdict = judge_response.strip().upper()
+    passed = verdict.startswith("YES")
+
+    return AssertionResult(
+        passed=passed,
+        details={"judge_prompt": judge_prompt, "judge_verdict": verdict},
     )
