@@ -4,6 +4,7 @@ import os
 import time
 
 import httpx
+import openai
 from openai import AsyncOpenAI
 
 from pramana.providers.base import BaseProvider
@@ -43,13 +44,23 @@ class OpenAIProvider(BaseProvider):
 
         start_ms = int(time.time() * 1000)
 
-        response = await self.client.chat.completions.create(
-            model=self.model_id,
-            messages=messages,
-            temperature=temperature,
-            seed=seed,
-            max_completion_tokens=1000,
-        )
+        kwargs: dict[str, object] = {
+            "model": self.model_id,
+            "messages": messages,
+            "temperature": temperature,
+            "seed": seed,
+            "max_completion_tokens": 1000,
+        }
+
+        try:
+            response = await self.client.chat.completions.create(**kwargs)  # type: ignore[arg-type]
+        except openai.BadRequestError as exc:
+            if "temperature" in str(exc) or "seed" in str(exc):
+                kwargs.pop("temperature", None)
+                kwargs.pop("seed", None)
+                response = await self.client.chat.completions.create(**kwargs)  # type: ignore[arg-type]
+            else:
+                raise
 
         latency_ms = int(time.time() * 1000) - start_ms
         output = response.choices[0].message.content or ""
