@@ -127,12 +127,17 @@ async def _run_test(
     # Compute hash
     result_hash = hash_result(provider.model_id, test_case.id, output)
 
+    # Compute score: 1.0=passed, 0.0=failed, None=skipped
+    skipped = assertion_result.details.get("skipped", False)
+    score: float | None = None if skipped else (1.0 if assertion_result.passed else 0.0)
+
     return TestResult(
         test_id=test_case.id,
         output=output,
         assertion_result=assertion_result,
         latency_ms=latency_ms,
         result_hash=result_hash,
+        score=score,
     )
 
 

@@ -107,11 +107,6 @@ async for msg in query(
 - No temperature/seed parameters exposed in SDK
 - Uses Messages API internally with defaults
 
-**Potential workaround:** Test `extra_args` to see if CLI accepts parameters:
-```bash
-python test_claude_code_temperature.py
-```
-
 ---
 
 ## Recommendations
@@ -139,26 +134,13 @@ pramana run --tier cheap --model claude-opus-4-6 --use-subscription
 
 ## Testing Reproducibility
 
-### Empirical Test Script
-Run the provided test to measure actual variance:
+Run the test suite to verify assertion logic and provider wiring:
 
 ```bash
-uv add anthropic
-export ANTHROPIC_API_KEY="sk-..."
-uv run python test_reproducibility.py
+pytest tests/
 ```
 
-**Output:** JSON with variance metrics (exact match rate, similarity scores)
-
-### Claude Code Temperature Test
-Test if extra_args can control parameters:
-
-```bash
-uv pip install -e ".[subscription]"
-uv run python test_claude_code_temperature.py
-```
-
-**Expected:** If CLI honors extra_args, second set of runs will be identical.
+For empirical variance measurement, run the same eval multiple times and compare result hashes.
 
 ---
 

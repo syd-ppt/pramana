@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Providers — Pramana</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <button class="nav-toggle" onclick="document.querySelector('nav').classList.toggle('open')">&#9776;</button>
+  <div class="layout">
+    <nav>
+      <div class="logo">
+        <a href="index.html">pramana</a>
+        <span class="sanskrit">प्रमाण</span>
+      </div>
+      <ul>
+        <li class="nav-section">Getting Started</li>
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="quickstart.html">Quick Start</a></li>
+        <li><a href="cli.html">CLI Reference</a></li>
+        <li class="nav-section">Internals</li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="providers.html" class="active">Providers</a></li>
+        <li><a href="suites.html">Test Suites</a></li>
+        <li><a href="reproducibility.html">Reproducibility</a></li>
+        <li class="nav-section">Community</li>
+        <li><a href="contributing.html">Contributing</a></li>
+      </ul>
+      <div class="ext-links">
+        <a href="https://github.com/syd-ppt/pramana">GitHub</a>
+        <a href="https://pypi.org/project/pramana/">PyPI</a>
+        <a href="https://pramana.pages.dev">Dashboard</a>
+      </div>
+    </nav>
+    <main>
+      <h1>Providers</h1>
+      <p class="page-desc">Provider comparison, registration system, and how to add new providers.</p>
+
+      <h2>Reproducibility matrix</h2>
+      <table>
+        <thead>
+          <tr><th>Provider</th><th>Mode</th><th>Temperature</th><th>Seed</th><th>Reproducibility</th><th>Env var</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>OpenAI</td>
+            <td>API</td>
+            <td><span class="badge green">enforced</span></td>
+            <td><span class="badge green">enforced</span></td>
+            <td><span class="badge green">high</span></td>
+            <td><code>OPENAI_API_KEY</code></td>
+          </tr>
+          <tr>
+            <td>Anthropic</td>
+            <td>API</td>
+            <td><span class="badge green">enforced</span></td>
+            <td><span class="badge red">ignored</span></td>
+            <td><span class="badge amber">low</span></td>
+            <td><code>ANTHROPIC_API_KEY</code></td>
+          </tr>
+          <tr>
+            <td>Anthropic</td>
+            <td>subscription</td>
+            <td><span class="badge amber">hint only</span></td>
+            <td><span class="badge red">N/A</span></td>
+            <td><span class="badge amber">low</span></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td>Google</td>
+            <td>API</td>
+            <td><span class="badge green">enforced</span></td>
+            <td><span class="badge green">enforced</span></td>
+            <td><span class="badge amber">TBD</span></td>
+            <td><code>GEMINI_API_KEY</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Provider registry</h2>
+      <p>Providers auto-register via the <code>@register()</code> decorator in <code>providers/registry.py</code>. The <code>__init__.py</code> auto-discovers all modules in the package at import time.</p>
+      <p class="src">Source: <a href="https://github.com/syd-ppt/pramana/blob/main/src/pramana/providers/registry.py">providers/registry.py</a></p>
+
+      <pre><code>@register("openai", "api", env_key="OPENAI_API_KEY")
+class OpenAIProvider(BaseProvider):
+    ...</code></pre>
+
+      <p>Registration key is <code>(provider_name, mode)</code>. Mode is either <code>"api"</code> or <code>"subscription"</code>.</p>
+
+      <h3>Resolution order</h3>
+      <ol>
+        <li>If <code>--use-subscription</code> or <code>--api-key</code> is passed, use that mode explicitly</li>
+        <li>Otherwise auto-detect: try <code>preferred_mode</code> (from <code>pramana config</code>) first, then the other</li>
+        <li>Check availability: API mode requires env var or <code>--api-key</code>; subscription requires SDK installed</li>
+      </ol>
+
+      <h2>BaseProvider interface</h2>
+      <p class="src">Source: <a href="https://github.com/syd-ppt/pramana/blob/main/src/pramana/providers/base.py">providers/base.py</a></p>
+      <pre><code>class BaseProvider(ABC):
+    @abstractmethod
+    async def complete(
+        self,
+        input_text: str,
+        system_prompt: str | None = None,
+        temperature: float = 0.0,
+        seed: int | None = None,
+    ) -> tuple[str, int]:
+        """Return (output_text, latency_ms)."""
+        ...
+
+    @abstractmethod
+    def estimate_tokens(self, text: str) -> int:
+        """Estimate token count for text."""
+        ...</code></pre>
+
+      <h2>Implemented providers</h2>
+
+      <h3>OpenAI</h3>
+      <p class="src">Source: <a href="https://github.com/syd-ppt/pramana/blob/main/src/pramana/providers/openai.py">providers/openai.py</a></p>
+      <ul>
+        <li>Uses <code>AsyncOpenAI</code> client</li>
+        <li>Passes <code>temperature</code> and <code>seed</code> directly to API</li>
+        <li>Handles models that reject these params (e.g., reasoning models) by caching rejections and retrying without them</li>
+        <li>Logs a warning when params are dropped (results will not be reproducible)</li>
+      </ul>
+
+      <h3>Anthropic</h3>
+      <p class="src">Source: <a href="https://github.com/syd-ppt/pramana/blob/main/src/pramana/providers/anthropic.py">providers/anthropic.py</a></p>
+      <ul>
+        <li>Uses <code>AsyncAnthropic</code> client</li>
+        <li>Passes <code>temperature</code> to API</li>
+        <li><code>seed</code> parameter is accepted but silently ignored by the API</li>
+        <li>Even at <code>temperature=0.0</code>, outputs are non-deterministic per official docs</li>
+      </ul>
+
+      <h3>Google Gemini</h3>
+      <p class="src">Source: <a href="https://github.com/syd-ppt/pramana/blob/main/src/pramana/providers/google.py">providers/google.py</a></p>
+      <ul>
+        <li>Uses <code>google.genai</code> client</li>
+        <li>Passes <code>temperature</code> and <code>seed</code> via <code>GenerateContentConfig</code></li>
+        <li>Supports <code>system_instruction</code> for system prompts</li>
+      </ul>
+
+      <h3>Claude Code (subscription)</h3>
+      <p class="src">Source: <a href="https://github.com/syd-ppt/pramana/blob/main/src/pramana/providers/claude_code.py">providers/claude_code.py</a></p>
+      <ul>
+        <li>Uses <code>claude_agent_sdk</code> (optional dependency)</li>
+        <li>No parameter control — <code>temperature=1.0</code> by default</li>
+        <li>Non-deterministic by design</li>
+        <li>For exploratory testing, not scientific drift detection</li>
+      </ul>
+
+      <h2>Adding a new provider</h2>
+      <ol>
+        <li>Create <code>src/pramana/providers/yourprovider.py</code></li>
+        <li>Subclass <code>BaseProvider</code>, decorate with <code>@register()</code></li>
+        <li>Implement <code>complete()</code> and <code>estimate_tokens()</code></li>
+        <li>Add model prefix to <code>FALLBACK_MODELS</code> in <code>models.py</code></li>
+        <li>Add tests in <code>tests/test_providers_integration.py</code></li>
+      </ol>
+
+      <pre><code>from pramana.providers.base import BaseProvider
+from pramana.providers.registry import register
+
+@register("yourprovider", "api", env_key="YOUR_API_KEY")
+class YourProvider(BaseProvider):
+    def __init__(self, model_id: str, api_key: str | None = None):
+        self.model_id = model_id
+        # Initialize client...
+
+    async def complete(
+        self,
+        input_text: str,
+        system_prompt: str | None = None,
+        temperature: float = 0.0,
+        seed: int | None = None,
+    ) -> tuple[str, int]:
+        start_ms = int(time.time() * 1000)
+        # Call API...
+        latency_ms = int(time.time() * 1000) - start_ms
+        return output, latency_ms
+
+    def estimate_tokens(self, text: str) -> int:
+        return len(text) // 4</code></pre>
+
+      <div class="callout">
+        No manual edit to <code>__init__.py</code> needed. The auto-discovery in <code>providers/__init__.py</code> will find and import your module automatically.
+      </div>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLI Reference — Pramana</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <button class="nav-toggle" onclick="document.querySelector('nav').classList.toggle('open')">&#9776;</button>
+  <div class="layout">
+    <nav>
+      <div class="logo">
+        <a href="index.html">pramana</a>
+        <span class="sanskrit">प्रमाण</span>
+      </div>
+      <ul>
+        <li class="nav-section">Getting Started</li>
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="quickstart.html">Quick Start</a></li>
+        <li><a href="cli.html" class="active">CLI Reference</a></li>
+        <li class="nav-section">Internals</li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="providers.html">Providers</a></li>
+        <li><a href="suites.html">Test Suites</a></li>
+        <li><a href="reproducibility.html">Reproducibility</a></li>
+        <li class="nav-section">Community</li>
+        <li><a href="contributing.html">Contributing</a></li>
+      </ul>
+      <div class="ext-links">
+        <a href="https://github.com/syd-ppt/pramana">GitHub</a>
+        <a href="https://pypi.org/project/pramana/">PyPI</a>
+        <a href="https://pramana.pages.dev">Dashboard</a>
+      </div>
+    </nav>
+    <main>
+      <h1>CLI Reference</h1>
+      <p class="page-desc">All commands, options, and behavior.</p>
+      <p class="src">Source: <a href="https://github.com/syd-ppt/pramana/blob/main/src/pramana/cli.py">src/pramana/cli.py</a></p>
+
+      <h2>Commands</h2>
+      <table>
+        <thead><tr><th>Command</th><th>Synopsis</th></tr></thead>
+        <tbody>
+          <tr><td><code>pramana run</code></td><td>Run evals against a model</td></tr>
+          <tr><td><code>pramana submit</code></td><td>Submit results to the platform</td></tr>
+          <tr><td><code>pramana models</code></td><td>List available models</td></tr>
+          <tr><td><code>pramana login</code></td><td>Authenticate via OAuth</td></tr>
+          <tr><td><code>pramana logout</code></td><td>Clear stored token</td></tr>
+          <tr><td><code>pramana whoami</code></td><td>Show login status</td></tr>
+          <tr><td><code>pramana config</code></td><td>Configure preferences</td></tr>
+          <tr><td><code>pramana delete</code></td><td>Delete all your data (GDPR)</td></tr>
+        </tbody>
+      </table>
+
+      <h2>pramana run</h2>
+      <p>Execute an eval suite against a model and save results locally.</p>
+      <pre><code>pramana run --tier &lt;tier&gt; --model &lt;model_id&gt; [options]</code></pre>
+      <table>
+        <thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>--tier</code></td><td><em>required</em></td><td>Suite tier: <code>cheap</code>, <code>moderate</code>, <code>comprehensive</code></td></tr>
+          <tr><td><code>--model</code></td><td><em>required</em></td><td>Model ID or alias (e.g., <code>gpt-5.2</code>, <code>opus</code>)</td></tr>
+          <tr><td><code>--output</code></td><td><code>results.json</code></td><td>Output file path</td></tr>
+          <tr><td><code>--temperature</code></td><td><code>0.0</code></td><td>Sampling temperature</td></tr>
+          <tr><td><code>--seed</code></td><td><code>42</code></td><td>Random seed for reproducibility</td></tr>
+          <tr><td><code>--offline</code></td><td><code>false</code></td><td>Save locally without submit prompt</td></tr>
+          <tr><td><code>--api-key</code></td><td>from env</td><td>API key (overrides env var)</td></tr>
+          <tr><td><code>--use-subscription</code></td><td><code>false</code></td><td>Use Claude Code subscription mode</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Behavior</h3>
+      <ul>
+        <li>Resolves short aliases (<code>opus</code> → <code>claude-opus-4-6</code>)</li>
+        <li>Auto-detects provider from model name prefix</li>
+        <li>Selects API or subscription mode based on available credentials</li>
+        <li>Runs tests sequentially with a progress bar</li>
+        <li>Appends results to the output file (multiple runs accumulate)</li>
+      </ul>
+
+      <h3>Examples</h3>
+      <pre><code># Basic run
+$ pramana run --tier cheap --model gpt-5.2
+
+# Explicit parameters
+$ pramana run --tier comprehensive --model gpt-5.2 --temperature 0.0 --seed 42
+
+# With API key
+$ pramana run --tier cheap --model claude-opus-4-6 --api-key sk-ant-...
+
+# Offline mode
+$ pramana run --tier cheap --model gpt-4o --offline</code></pre>
+
+      <h2>pramana submit</h2>
+      <p>Upload locally saved results to the Pramana platform.</p>
+      <pre><code>pramana submit &lt;results_file&gt; [options]</code></pre>
+      <table>
+        <thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>results_file</code></td><td><em>required</em></td><td>Path to results JSON file</td></tr>
+          <tr><td><code>--api-url</code></td><td>from config</td><td>API endpoint URL</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Behavior</h3>
+      <ul>
+        <li>Drains all pending run blocks from the file, one at a time</li>
+        <li>Removes each block from the file after successful submission</li>
+        <li>Stops on first failure, preserving remaining blocks</li>
+        <li>Reports duplicate count (server-side deduplication via content hash)</li>
+      </ul>
+
+      <h2>pramana models</h2>
+      <p>List models from all providers.</p>
+      <pre><code>pramana models [--refresh]</code></pre>
+      <table>
+        <thead><tr><th>Option</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>--refresh</code></td><td>Force fetch from upstream (bypass 24h cache)</td></tr>
+        </tbody>
+      </table>
+
+      <h2>pramana login</h2>
+      <p>Authenticate via browser-based OAuth (GitHub or Google).</p>
+      <pre><code>pramana login [--api-url URL]</code></pre>
+      <p>Opens browser, waits for callback, stores token locally.</p>
+
+      <h2>pramana logout</h2>
+      <p>Clear stored authentication token.</p>
+      <pre><code>pramana logout</code></pre>
+
+      <h2>pramana whoami</h2>
+      <p>Display current login status.</p>
+      <pre><code>pramana whoami</code></pre>
+
+      <h2>pramana config</h2>
+      <p>Configure auto-detection preferences.</p>
+      <pre><code>pramana config [--show] [--prefer-api] [--prefer-subscription]</code></pre>
+      <table>
+        <thead><tr><th>Option</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>--show</code></td><td>Show current configuration</td></tr>
+          <tr><td><code>--prefer-api</code></td><td>Default to API mode when both modes are available</td></tr>
+          <tr><td><code>--prefer-subscription</code></td><td>Default to subscription mode</td></tr>
+        </tbody>
+      </table>
+
+      <h2>pramana delete</h2>
+      <p>Delete all your data from the platform (GDPR compliance).</p>
+      <pre><code>pramana delete [--anonymize] [--confirm] [--api-url URL]</code></pre>
+      <table>
+        <thead><tr><th>Option</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>--anonymize</code></td><td>Keep results as anonymous instead of full deletion</td></tr>
+          <tr><td><code>--confirm</code></td><td>Skip confirmation prompt</td></tr>
+          <tr><td><code>--api-url</code></td><td>API endpoint URL</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Model aliases</h2>
+      <table>
+        <thead><tr><th>Alias</th><th>Resolves to</th></tr></thead>
+        <tbody>
+          <tr><td><code>opus</code></td><td><code>claude-opus-4-6</code></td></tr>
+          <tr><td><code>sonnet</code></td><td><code>claude-sonnet-4-6</code></td></tr>
+          <tr><td><code>haiku</code></td><td><code>claude-haiku-4-5</code></td></tr>
+        </tbody>
+      </table>
+    </main>
+  </div>
+</body>
+</html>

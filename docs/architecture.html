@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architecture — Pramana</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <button class="nav-toggle" onclick="document.querySelector('nav').classList.toggle('open')">&#9776;</button>
+  <div class="layout">
+    <nav>
+      <div class="logo">
+        <a href="index.html">pramana</a>
+        <span class="sanskrit">प्रमाण</span>
+      </div>
+      <ul>
+        <li class="nav-section">Getting Started</li>
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="quickstart.html">Quick Start</a></li>
+        <li><a href="cli.html">CLI Reference</a></li>
+        <li class="nav-section">Internals</li>
+        <li><a href="architecture.html" class="active">Architecture</a></li>
+        <li><a href="providers.html">Providers</a></li>
+        <li><a href="suites.html">Test Suites</a></li>
+        <li><a href="reproducibility.html">Reproducibility</a></li>
+        <li class="nav-section">Community</li>
+        <li><a href="contributing.html">Contributing</a></li>
+      </ul>
+      <div class="ext-links">
+        <a href="https://github.com/syd-ppt/pramana">GitHub</a>
+        <a href="https://pypi.org/project/pramana/">PyPI</a>
+        <a href="https://pramana.pages.dev">Dashboard</a>
+      </div>
+    </nav>
+    <main>
+      <h1>Architecture</h1>
+      <p class="page-desc">System design, modules, data flow, and design rationale.</p>
+
+      <h2>System diagram</h2>
+      <div class="diagram">┌─────────────────────────────────────────────────────────────────┐
+│  pramana CLI (this repo)                                        │
+│                                                                 │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐  │
+│  │ cli.py   │───▶│ runner   │───▶│ provider │───▶│ OpenAI   │  │
+│  │          │    │          │    │ registry │    │ Anthropic│  │
+│  │ commands │    │ run_eval │    │          │    │ Google   │  │
+│  └──────────┘    └────┬─────┘    └──────────┘    └──────────┘  │
+│                       │                                         │
+│                  ┌────▼─────┐    ┌──────────┐                   │
+│                  │assertions│    │  hash.py │                   │
+│                  │          │    │  SHA-256  │                   │
+│                  └──────────┘    └──────────┘                   │
+│                                                                 │
+│  ┌──────────┐    ┌──────────┐                                   │
+│  │ storage  │    │submitter │───▶  pramana.pages.dev/api/submit │
+│  │ local    │    │ HTTP POST│                                   │
+│  └──────────┘    └──────────┘                                   │
+└─────────────────────────────────────────────────────────────────┘
+                                          │
+                                          ▼
+                                   ┌──────────────┐
+                                   │ pramana-api  │
+                                   │ (separate    │
+                                   │  repo)       │
+                                   └──────────────┘</div>
+
+      <h2>Module map</h2>
+      <table>
+        <thead><tr><th>File</th><th>Purpose</th><th>Key exports</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>cli.py</code></td>
+            <td>Click command group, entry point</td>
+            <td><code>cli</code>, <code>run</code>, <code>submit</code>, <code>models</code>, <code>login</code>, <code>logout</code>, <code>whoami</code>, <code>config</code>, <code>delete</code></td>
+          </tr>
+          <tr>
+            <td><code>runner.py</code></td>
+            <td>Eval execution engine</td>
+            <td><code>run_eval(suite_path, provider, temperature, seed)</code></td>
+          </tr>
+          <tr>
+            <td><code>protocol.py</code></td>
+            <td>Pydantic schemas for all data types</td>
+            <td><code>TestCase</code>, <code>TestResult</code>, <code>EvalResults</code>, <code>RunMetadata</code></td>
+          </tr>
+          <tr>
+            <td><code>models.py</code></td>
+            <td>Dynamic model registry with 24h cache</td>
+            <td><code>get_available_models()</code>, <code>detect_provider()</code>, <code>resolve_alias()</code></td>
+          </tr>
+          <tr>
+            <td><code>hash.py</code></td>
+            <td>Content-addressable hashing</td>
+            <td><code>hash_suite()</code>, <code>hash_result()</code>, <code>hash_output()</code></td>
+          </tr>
+          <tr>
+            <td><code>assertions.py</code></td>
+            <td>Assertion evaluation</td>
+            <td><code>evaluate_assertion()</code></td>
+          </tr>
+          <tr>
+            <td><code>submitter.py</code></td>
+            <td>HTTP POST to API</td>
+            <td><code>submit_results()</code></td>
+          </tr>
+          <tr>
+            <td><code>storage.py</code></td>
+            <td>Local result persistence</td>
+            <td><code>append_result()</code>, <code>load_results()</code>, <code>remove_run()</code></td>
+          </tr>
+          <tr>
+            <td><code>auth.py</code></td>
+            <td>OAuth flow, token storage</td>
+            <td><code>login()</code>, <code>logout()</code>, <code>whoami()</code></td>
+          </tr>
+          <tr>
+            <td><code>providers/base.py</code></td>
+            <td>Abstract provider interface</td>
+            <td><code>BaseProvider</code></td>
+          </tr>
+          <tr>
+            <td><code>providers/registry.py</code></td>
+            <td>Auto-discovery, <code>@register()</code> decorator</td>
+            <td><code>register()</code>, <code>resolve_provider()</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Data flow</h2>
+      <pre><code>TestCase (JSONL)
+  │
+  ▼
+provider.complete(input_text, temperature, seed)
+  │
+  ▼
+evaluate_assertion(assertion, output, ideal) → AssertionResult
+  │
+  ▼
+hash_result(model_id, test_id, output) → SHA-256
+  │
+  ▼
+TestResult { test_id, output, assertion_result, latency_ms, result_hash }
+  │
+  ▼
+EvalResults { suite_version, suite_hash, run_metadata, results[], summary }
+  │
+  ▼
+append_result(path, results) → local JSON file
+  │
+  ▼
+submit_results(block, api_url) → HTTP POST to pramana-api</code></pre>
+
+      <h2>Design rationale</h2>
+
+      <h3>Why no LiteLLM?</h3>
+      <p>LiteLLM normalizes API responses across providers. Pramana needs raw responses to detect drift — normalization hides exactly the changes we're measuring.</p>
+
+      <h3>Why no local models?</h3>
+      <p>Pramana detects <em>provider</em> drift: silent updates to models behind stable identifiers. Local models (Ollama, vLLM) have user-controlled weights with no silent updates.</p>
+
+      <h3>Why content-addressable hashing?</h3>
+      <p>SHA-256 of (model_id, prompt_id, output) enables deterministic deduplication. Same input + same output = same hash, regardless of when or where it ran. The server deduplicates on this hash.</p>
+
+      <h3>Why 24h model cache?</h3>
+      <p>Model releases are infrequent. Caching for 24 hours balances freshness vs. performance. Use <code>--refresh</code> to bypass.</p>
+
+      <h3>Why custom providers?</h3>
+      <p>Full control over API parameters (temperature, seed, message format) is required for scientific reproducibility. Generic wrappers may not pass all parameters correctly.</p>
+
+      <h2>Repo boundaries</h2>
+      <table>
+        <thead><tr><th>Repo</th><th>Scope</th></tr></thead>
+        <tbody>
+          <tr><td><code>pramana</code> (this)</td><td>CLI, providers, eval execution, submission client</td></tr>
+          <tr><td><code>pramana-api</code></td><td>Submission endpoint, storage, aggregation, dashboard</td></tr>
+        </tbody>
+      </table>
+      <div class="callout warn">
+        Do not add backend features, storage logic, or dashboard code to this repo.
+      </div>
+    </main>
+  </div>
+</body>
+</html>

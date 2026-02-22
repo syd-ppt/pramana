@@ -72,6 +72,7 @@ class TestResult(BaseModel):
     assertion_result: AssertionResult
     latency_ms: int
     result_hash: str
+    score: float | None = None
 
 
 class RunMetadata(BaseModel):

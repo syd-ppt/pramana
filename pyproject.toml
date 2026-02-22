@@ -39,7 +39,7 @@ subscription = [
 
 [project.urls]
 Homepage = "https://github.com/syd-ppt/pramana"
-Documentation = "https://github.com/syd-ppt/pramana#readme"
+Documentation = "https://syd-ppt.github.io/pramana/"
 Repository = "https://github.com/syd-ppt/pramana"
 Issues = "https://github.com/syd-ppt/pramana/issues"
 

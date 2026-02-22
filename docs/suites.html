@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Suites — Pramana</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <button class="nav-toggle" onclick="document.querySelector('nav').classList.toggle('open')">&#9776;</button>
+  <div class="layout">
+    <nav>
+      <div class="logo">
+        <a href="index.html">pramana</a>
+        <span class="sanskrit">प्रमाण</span>
+      </div>
+      <ul>
+        <li class="nav-section">Getting Started</li>
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="quickstart.html">Quick Start</a></li>
+        <li><a href="cli.html">CLI Reference</a></li>
+        <li class="nav-section">Internals</li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="providers.html">Providers</a></li>
+        <li><a href="suites.html" class="active">Test Suites</a></li>
+        <li><a href="reproducibility.html">Reproducibility</a></li>
+        <li class="nav-section">Community</li>
+        <li><a href="contributing.html">Contributing</a></li>
+      </ul>
+      <div class="ext-links">
+        <a href="https://github.com/syd-ppt/pramana">GitHub</a>
+        <a href="https://pypi.org/project/pramana/">PyPI</a>
+        <a href="https://pramana.pages.dev">Dashboard</a>
+      </div>
+    </nav>
+    <main>
+      <h1>Test Suites</h1>
+      <p class="page-desc">JSONL format, assertion types, tiers, and categories.</p>
+
+      <h2>JSONL format</h2>
+      <p>Each test suite is a JSONL file (one JSON object per line).</p>
+      <pre><code>{
+  "id": "reasoning-001",
+  "category": "reasoning",
+  "input": "If 5 cats catch 5 mice in 5 minutes, how long for 100 cats to catch 100 mice?",
+  "ideal": ["5 minutes", "5 mins"],
+  "assertion": {
+    "type": "contains_any",
+    "case_sensitive": false
+  },
+  "metadata": {
+    "difficulty": "medium",
+    "tokens_est": 40,
+    "tags": ["math", "logic"]
+  }
+}</code></pre>
+
+      <h3>Field reference</h3>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td><code>string</code></td><td>Unique ID: <code>{category}-{num}</code></td></tr>
+          <tr><td><code>category</code></td><td><code>enum</code></td><td>One of 6 categories (see below)</td></tr>
+          <tr><td><code>input</code></td><td><code>string | message[]</code></td><td>Prompt text or chat message array</td></tr>
+          <tr><td><code>ideal</code></td><td><code>string | string[] | null</code></td><td>Expected output(s) for matching</td></tr>
+          <tr><td><code>assertion.type</code></td><td><code>enum</code></td><td>Assertion type (see below)</td></tr>
+          <tr><td><code>assertion.case_sensitive</code></td><td><code>bool</code></td><td>Default: <code>true</code></td></tr>
+          <tr><td><code>assertion.threshold</code></td><td><code>float | null</code></td><td>For <code>semantic_similarity</code></td></tr>
+          <tr><td><code>assertion.judge_prompt</code></td><td><code>string | null</code></td><td>For <code>llm_judge</code></td></tr>
+          <tr><td><code>metadata.difficulty</code></td><td><code>easy | medium | hard</code></td><td>Difficulty rating</td></tr>
+          <tr><td><code>metadata.tokens_est</code></td><td><code>int</code></td><td>Estimated token count</td></tr>
+          <tr><td><code>metadata.tags</code></td><td><code>string[]</code></td><td>Optional tags</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Assertion types</h2>
+      <p class="src">Source: <a href="https://github.com/syd-ppt/pramana/blob/main/src/pramana/assertions.py">assertions.py</a></p>
+      <table>
+        <thead><tr><th>Type</th><th>Behavior</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>exact_match</code></td>
+            <td>Output (stripped) must equal <code>ideal</code>. Respects <code>case_sensitive</code>.</td>
+            <td><span class="badge green">implemented</span></td>
+          </tr>
+          <tr>
+            <td><code>contains</code></td>
+            <td>Output must contain <code>ideal</code> as substring.</td>
+            <td><span class="badge green">implemented</span></td>
+          </tr>
+          <tr>
+            <td><code>contains_any</code></td>
+            <td>Output must contain at least one string from <code>ideal[]</code>.</td>
+            <td><span class="badge green">implemented</span></td>
+          </tr>
+          <tr>
+            <td><code>is_json</code></td>
+            <td>Output must be valid JSON. Strips markdown fences before parsing.</td>
+            <td><span class="badge green">implemented</span></td>
+          </tr>
+          <tr>
+            <td><code>llm_judge</code></td>
+            <td>Uses the same provider as judge. Sends output + <code>judge_prompt</code>, expects YES/NO.</td>
+            <td><span class="badge amber">implemented</span></td>
+          </tr>
+          <tr>
+            <td><code>semantic_similarity</code></td>
+            <td>Embedding-based similarity against <code>ideal</code> with <code>threshold</code>.</td>
+            <td><span class="badge red">not implemented</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Suite tiers</h2>
+      <p>Data from <code>manifest.toml</code>:</p>
+      <table>
+        <thead><tr><th>Tier</th><th>Tests</th><th>Est. cost</th><th>Est. tokens</th><th>Use case</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>cheap</code></td>
+            <td>10</td>
+            <td>$0.05</td>
+            <td>350</td>
+            <td>Smoke test, CI gates</td>
+          </tr>
+          <tr>
+            <td><code>moderate</code></td>
+            <td>25</td>
+            <td>$0.25</td>
+            <td>950</td>
+            <td>Regular monitoring</td>
+          </tr>
+          <tr>
+            <td><code>comprehensive</code></td>
+            <td>75</td>
+            <td>$1.50</td>
+            <td>2,800</td>
+            <td>Full evaluation</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Categories</h2>
+      <table>
+        <thead><tr><th>Category</th><th>Examples</th></tr></thead>
+        <tbody>
+          <tr><td><code>reasoning</code></td><td>Logic puzzles, math, deductive chains</td></tr>
+          <tr><td><code>factual</code></td><td>Knowledge recall, date/number questions</td></tr>
+          <tr><td><code>instruction_following</code></td><td>Format compliance, constraint adherence</td></tr>
+          <tr><td><code>coding</code></td><td>Code generation, debugging, JSON output</td></tr>
+          <tr><td><code>safety</code></td><td>Refusal of harmful requests, boundary testing</td></tr>
+          <tr><td><code>creative</code></td><td>Open-ended generation (judged by LLM)</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Suite versioning</h2>
+      <p>Suites are immutable. Once published, a suite version never changes. New tests go into a new version.</p>
+      <p>Each suite has a SHA-256 hash computed from sorted test case IDs and content. This hash is included in every submission for integrity verification.</p>
+
+      <pre><code>from pramana.hash import hash_suite
+print(hash_suite("src/pramana/suites/v1.0/cheap.jsonl"))
+# sha256:a1b2c3...</code></pre>
+
+      <h2>File layout</h2>
+      <pre><code>src/pramana/suites/v1.0/
+├── manifest.toml     # Tier metadata, categories, assertion types
+├── cheap.jsonl       # 10 tests
+├── moderate.jsonl    # 25 tests
+└── comprehensive.jsonl  # 75 tests</code></pre>
+    </main>
+  </div>
+</body>
+</html>

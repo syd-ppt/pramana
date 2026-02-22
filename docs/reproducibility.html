@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reproducibility — Pramana</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <button class="nav-toggle" onclick="document.querySelector('nav').classList.toggle('open')">&#9776;</button>
+  <div class="layout">
+    <nav>
+      <div class="logo">
+        <a href="index.html">pramana</a>
+        <span class="sanskrit">प्रमाण</span>
+      </div>
+      <ul>
+        <li class="nav-section">Getting Started</li>
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="quickstart.html">Quick Start</a></li>
+        <li><a href="cli.html">CLI Reference</a></li>
+        <li class="nav-section">Internals</li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="providers.html">Providers</a></li>
+        <li><a href="suites.html">Test Suites</a></li>
+        <li><a href="reproducibility.html" class="active">Reproducibility</a></li>
+        <li class="nav-section">Community</li>
+        <li><a href="contributing.html">Contributing</a></li>
+      </ul>
+      <div class="ext-links">
+        <a href="https://github.com/syd-ppt/pramana">GitHub</a>
+        <a href="https://pypi.org/project/pramana/">PyPI</a>
+        <a href="https://pramana.pages.dev">Dashboard</a>
+      </div>
+    </nav>
+    <main>
+      <h1>Reproducibility</h1>
+      <p class="page-desc">How Pramana achieves (and where it can't achieve) deterministic outputs.</p>
+
+      <h2>Why reproducibility matters</h2>
+      <p>Drift detection requires comparing outputs across time and users. If two runs of the same prompt produce different outputs due to sampling randomness (not a model change), we can't distinguish real drift from noise.</p>
+
+      <h2>Pramana defaults</h2>
+      <table>
+        <thead><tr><th>Parameter</th><th>Default</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>temperature</code></td><td><code>0.0</code></td><td>Eliminates sampling randomness</td></tr>
+          <tr><td><code>seed</code></td><td><code>42</code></td><td>Fixed RNG state for providers that support it</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Provider comparison</h2>
+      <table>
+        <thead>
+          <tr><th>Provider</th><th>Temperature</th><th>Seed</th><th>Reproducibility</th><th>Recommended</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>OpenAI API</strong></td>
+            <td><span class="badge green">enforced</span></td>
+            <td><span class="badge green">enforced</span></td>
+            <td><span class="badge green">high</span></td>
+            <td>Yes — scientific drift detection</td>
+          </tr>
+          <tr>
+            <td><strong>Anthropic API</strong></td>
+            <td><span class="badge green">enforced</span></td>
+            <td><span class="badge red">ignored</span></td>
+            <td><span class="badge amber">low</span></td>
+            <td>No — non-deterministic even at temp=0</td>
+          </tr>
+          <tr>
+            <td><strong>Claude Code</strong></td>
+            <td><span class="badge amber">hint only</span></td>
+            <td><span class="badge red">N/A</span></td>
+            <td><span class="badge amber">low</span></td>
+            <td>No — uses temp=1.0 by default</td>
+          </tr>
+          <tr>
+            <td><strong>Google Gemini</strong></td>
+            <td><span class="badge green">enforced</span></td>
+            <td><span class="badge green">enforced</span></td>
+            <td><span class="badge amber">TBD</span></td>
+            <td>Under evaluation</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>OpenAI</h2>
+      <p>Full reproducibility support. Same <code>seed</code> + same <code>system_fingerprint</code> = identical output.</p>
+      <pre><code>response = await client.chat.completions.create(
+    model="gpt-5.2",
+    messages=[{"role": "user", "content": "prompt"}],
+    temperature=0.0,
+    seed=42
+)</code></pre>
+      <ul>
+        <li><code>system_fingerprint</code> changes only on infrastructure updates (rare)</li>
+        <li>Temperature and seed are enforced at the API level</li>
+        <li>Some reasoning models (o1, o3) reject these parameters — Pramana handles this by retrying without them and logging a warning</li>
+      </ul>
+      <p class="src">Source: <a href="https://cookbook.openai.com/examples/reproducible_outputs_with_the_seed_parameter">OpenAI Cookbook</a></p>
+
+      <h2>Anthropic</h2>
+      <p>The API accepts a <code>seed</code> parameter but silently ignores it. Official documentation states: "even with temperature=0.0, results will not be fully deterministic."</p>
+      <pre><code>response = await client.messages.create(
+    model="claude-opus-4-6",
+    messages=[{"role": "user", "content": "prompt"}],
+    temperature=0.0
+    # seed not supported
+)</code></pre>
+      <ul>
+        <li>No <code>system_fingerprint</code> equivalent</li>
+        <li>No reproducibility guarantees at any temperature</li>
+      </ul>
+      <p class="src">Source: <a href="https://docs.anthropic.com/en/api/messages">Anthropic API docs</a></p>
+
+      <h2>Claude Code (subscription)</h2>
+      <p>Uses <code>temperature=1.0</code> by default. Parameters are passed as text hints in the prompt, not enforced by the API.</p>
+      <ul>
+        <li>No temperature or seed parameters in the SDK</li>
+        <li>Non-deterministic by design</li>
+        <li>Suitable for exploratory testing only</li>
+      </ul>
+
+      <h2>Recommendations</h2>
+
+      <h3>For scientific drift detection</h3>
+      <pre><code>export OPENAI_API_KEY="sk-..."
+pramana run --tier comprehensive --model gpt-5.2 --temperature 0.0 --seed 42</code></pre>
+
+      <h3>For exploratory testing</h3>
+      <pre><code># Any provider works, but results are not reproducible
+pramana run --tier cheap --model claude-opus-4-6</code></pre>
+
+      <div class="callout warn">
+        <strong>Warning:</strong> Results from Anthropic API and Claude Code subscription are not reproducible and should not be used for drift detection research.
+      </div>
+
+      <h2>Consistent defaults ≠ reproducibility</h2>
+      <p>Claude Code uses <code>temperature=1.0</code> for all users (a consistent default). But consistent defaults do not mean reproducible outputs — the sampling process is still non-deterministic. Two runs with identical inputs and parameters can produce different outputs.</p>
+
+      <h2>Verifying reproducibility</h2>
+      <p>Run the test suite to verify assertion logic and provider wiring:</p>
+      <pre><code>pytest tests/</code></pre>
+      <p>For empirical variance measurement, run the same eval multiple times and compare result hashes.</p>
+    </main>
+  </div>
+</body>
+</html>

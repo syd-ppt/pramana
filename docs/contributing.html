@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contributing — Pramana</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <button class="nav-toggle" onclick="document.querySelector('nav').classList.toggle('open')">&#9776;</button>
+  <div class="layout">
+    <nav>
+      <div class="logo">
+        <a href="index.html">pramana</a>
+        <span class="sanskrit">प्रमाण</span>
+      </div>
+      <ul>
+        <li class="nav-section">Getting Started</li>
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="quickstart.html">Quick Start</a></li>
+        <li><a href="cli.html">CLI Reference</a></li>
+        <li class="nav-section">Internals</li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="providers.html">Providers</a></li>
+        <li><a href="suites.html">Test Suites</a></li>
+        <li><a href="reproducibility.html">Reproducibility</a></li>
+        <li class="nav-section">Community</li>
+        <li><a href="contributing.html" class="active">Contributing</a></li>
+      </ul>
+      <div class="ext-links">
+        <a href="https://github.com/syd-ppt/pramana">GitHub</a>
+        <a href="https://pypi.org/project/pramana/">PyPI</a>
+        <a href="https://pramana.pages.dev">Dashboard</a>
+      </div>
+    </nav>
+    <main>
+      <h1>Contributing</h1>
+      <p class="page-desc">Setup, PR guidelines, adding test cases and providers.</p>
+
+      <h2>Scope</h2>
+      <table>
+        <thead><tr><th>Repo</th><th>Scope</th></tr></thead>
+        <tbody>
+          <tr><td><code>pramana</code> (this)</td><td>CLI, providers, eval logic, assertions, submission client</td></tr>
+          <tr><td><code>pramana-api</code></td><td>Server, storage, aggregation, dashboard</td></tr>
+        </tbody>
+      </table>
+      <p>PRs that add backend features, storage logic, or dashboard code to this repo will be closed. If unsure, open an issue first.</p>
+
+      <h2>Setup</h2>
+      <pre><code>git clone https://github.com/syd-ppt/pramana
+cd pramana
+uv pip install -e ".[dev]"</code></pre>
+
+      <h2>Development</h2>
+      <pre><code># Run tests
+pytest tests/
+
+# Lint
+ruff check .
+
+# Format
+ruff format .</code></pre>
+
+      <h2>PR guidelines</h2>
+      <ul>
+        <li>One feature per PR</li>
+        <li>Include tests for new functionality</li>
+        <li>Update documentation if applicable</li>
+        <li>Follow existing code style</li>
+        <li>No breaking changes without discussion</li>
+        <li><code>pytest tests/</code> must pass</li>
+        <li><code>ruff check .</code> must pass</li>
+      </ul>
+
+      <h2>Adding test cases</h2>
+      <h3>Guidelines</h3>
+      <ul>
+        <li>Categories: <code>reasoning</code>, <code>factual</code>, <code>instruction_following</code>, <code>coding</code>, <code>safety</code>, <code>creative</code></li>
+        <li>Format: one JSON object per line in JSONL files</li>
+        <li>Immutability: once published, suites never change (create new versions)</li>
+        <li>Cost awareness: estimate tokens accurately</li>
+      </ul>
+
+      <h3>Steps</h3>
+      <ol>
+        <li>Choose tier: <code>cheap</code> / <code>moderate</code> / <code>comprehensive</code></li>
+        <li>Append to the corresponding JSONL file</li>
+        <li>Update <code>manifest.toml</code> with new count and cost estimate</li>
+        <li>Compute new suite hash:
+          <pre><code>python -c "from pramana.hash import hash_suite; print(hash_suite('src/pramana/suites/v1.0/cheap.jsonl'))"</code></pre>
+        </li>
+        <li>Submit PR with test case + rationale</li>
+      </ol>
+
+      <h3>Example test case</h3>
+      <pre><code>{
+  "id": "cheap-011",
+  "category": "reasoning",
+  "input": "If 5 cats catch 5 mice in 5 minutes, how long for 100 cats to catch 100 mice?",
+  "ideal": ["5 minutes", "5 mins"],
+  "assertion": {
+    "type": "contains_any",
+    "case_sensitive": false
+  },
+  "metadata": {
+    "difficulty": "medium",
+    "tokens_est": 40,
+    "tags": ["math", "logic"]
+  }
+}</code></pre>
+
+      <h2>Adding providers</h2>
+      <p>Providers auto-register via the <code>@register()</code> decorator. No manual <code>__init__.py</code> edit needed.</p>
+      <ol>
+        <li>Create <code>src/pramana/providers/yourprovider.py</code></li>
+        <li>Subclass <code>BaseProvider</code>, decorate with <code>@register()</code></li>
+        <li>Implement <code>complete()</code> and <code>estimate_tokens()</code></li>
+        <li>Add model prefix to <code>FALLBACK_MODELS</code> in <code>models.py</code></li>
+        <li>Add tests</li>
+      </ol>
+      <p>See <a href="providers.html">Providers</a> for the full interface and example.</p>
+
+      <h2>Issue reporting</h2>
+      <ul>
+        <li><strong>Bug reports:</strong> include Python version, OS, command, error output</li>
+        <li><strong>Feature requests:</strong> explain use case, not just solution</li>
+        <li><strong>Test case suggestions:</strong> provide example with expected behavior</li>
+      </ul>
+
+      <h2>Code of conduct</h2>
+      <p>See <a href="https://github.com/syd-ppt/pramana/blob/main/CODE_OF_CONDUCT.md">CODE_OF_CONDUCT.md</a>. Be respectful, focus on the idea, assume good intent, scientific rigor over opinions.</p>
+    </main>
+  </div>
+</body>
+</html>

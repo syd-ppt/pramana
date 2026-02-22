@@ -38,8 +38,8 @@ def test_detect_provider_openai():
 
 def test_detect_provider_anthropic():
     """Should detect Anthropic models."""
-    assert detect_provider("claude-opus-4.6") == "anthropic"
-    assert detect_provider("claude-sonnet-5") == "anthropic"
+    assert detect_provider("claude-opus-4-6") == "anthropic"
+    assert detect_provider("claude-sonnet-4-6") == "anthropic"
 
 
 def test_detect_provider_google():
@@ -77,7 +77,7 @@ def test_fallback_models_structure():
 
     # Should contain current Feb 2026 models
     assert "gpt-5.2" in FALLBACK_MODELS["openai"]
-    assert "claude-opus-4.6" in FALLBACK_MODELS["anthropic"]
+    assert "claude-opus-4-6" in FALLBACK_MODELS["anthropic"]
     assert "gemini-3-flash-preview" in FALLBACK_MODELS["google"]
 
 

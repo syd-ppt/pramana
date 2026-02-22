@@ -21,10 +21,9 @@ FALLBACK_MODELS = {
         "o3-pro",
     ],
     "anthropic": [
-        "claude-opus-4.6",
-        "claude-sonnet-5",
-        "claude-sonnet-4.5",
-        "claude-opus-4",
+        "claude-opus-4-6",
+        "claude-sonnet-4-6",
+        "claude-haiku-4-5",
     ],
     "google": [
         "gemini-3.1-pro-preview",
@@ -34,6 +33,18 @@ FALLBACK_MODELS = {
         "gemini-2.5-flash",
     ],
 }
+
+
+MODEL_ALIASES: Dict[str, str] = {
+    "opus": "claude-opus-4-6",
+    "sonnet": "claude-sonnet-4-6",
+    "haiku": "claude-haiku-4-5",
+}
+
+
+def resolve_alias(model_id: str) -> str:
+    """Resolve a short alias to its full model ID."""
+    return MODEL_ALIASES.get(model_id, model_id)
 
 
 def get_available_models(force_refresh: bool = False) -> Dict[str, List[str]]:
@@ -88,7 +99,7 @@ def detect_provider(model_id: str) -> str:
     Auto-detect provider from model ID.
 
     Args:
-        model_id: Model identifier (e.g., "gpt-5.2", "claude-opus-4.6")
+        model_id: Model identifier (e.g., "gpt-5.2", "claude-opus-4-6")
 
     Returns:
         Provider name ("openai", "anthropic", "google")

@@ -8,6 +8,8 @@ tests/
 ├── test_assertions.py          # Assertion evaluation logic
 ├── test_hash.py                # Content-addressable hashing
 ├── test_auth.py                # Authentication & config storage
+├── test_runner.py              # Eval runner execution logic
+├── test_storage.py             # Local result storage
 ├── test_cli_integration.py     # CLI command integration tests
 └── test_providers_integration.py # Provider API integration tests
 ```

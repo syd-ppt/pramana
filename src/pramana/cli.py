@@ -16,7 +16,7 @@ from rich.progress import (
 )
 
 from pramana import auth
-from pramana.models import detect_provider
+from pramana.models import detect_provider, resolve_alias
 from pramana.providers.registry import list_unavailable_hints, resolve_provider
 from pramana.runner import run_eval
 from pramana.storage import append_result, load_results, remove_run
@@ -65,6 +65,9 @@ async def _run_async(tier, model, output, temperature, seed, offline, api_key, u
     if not suite_path.exists():
         console.print(f"[red]Suite not found: {suite_path}[/red]")
         sys.exit(1)
+
+    # Resolve short aliases (e.g. "opus" → "claude-opus-4-6")
+    model = resolve_alias(model)
 
     # --- Provider selection via registry ---
     try:

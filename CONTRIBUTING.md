@@ -91,23 +91,38 @@ ruff format .
 
 ## Adding Providers
 
-To add a new LLM provider:
+Providers auto-register via the `@register()` decorator. No manual `__init__.py` edit needed.
 
 1. Create `src/pramana/providers/yourprovider.py`
 2. Inherit from `BaseProvider`
-3. Implement `complete()` and `estimate_tokens()`
-4. Add to `providers/__init__.py`
-5. Update CLI to recognize provider
+3. Decorate with `@register("provider_name", "api", env_key="YOUR_API_KEY")`
+4. Implement `complete()` and `estimate_tokens()`
+5. Add provider prefix to `FALLBACK_MODELS` in `models.py`
 6. Add tests
 
 Example:
 ```python
 from pramana.providers.base import BaseProvider
+from pramana.providers.registry import register
 
+@register("yourprovider", "api", env_key="YOUR_PROVIDER_API_KEY")
 class YourProvider(BaseProvider):
-    async def complete(self, input_text: str, **kwargs) -> tuple[str, int]:
+    def __init__(self, model_id: str, api_key: str | None = None):
+        self.model_id = model_id
+        # ...
+
+    async def complete(
+        self,
+        input_text: str,
+        system_prompt: str | None = None,
+        temperature: float = 0.0,
+        seed: int | None = None,
+    ) -> tuple[str, int]:
         # Your implementation
-        pass
+        ...
+
+    def estimate_tokens(self, text: str) -> int:
+        return len(text) // 4
 ```
 
 ## Issue Reporting

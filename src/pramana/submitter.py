@@ -35,6 +35,7 @@ def _build_per_result_payloads(results_data: dict) -> list[dict]:
             "model_id": model_id,
             "prompt_id": result["test_id"],
             "output": result["output"],
+            "score": result.get("score"),
             "assertion_result": result.get("assertion_result"),
             "latency_ms": result.get("latency_ms"),
             "result_hash": result.get("result_hash"),

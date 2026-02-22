@@ -1,0 +1,205 @@
+<!--
+  Open in a browser and screenshot at 1280x640 for GitHub social preview.
+  Upload via: GitHub repo → Settings → Social preview → Edit → Upload
+-->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1280px; height: 640px;
+    background: linear-gradient(135deg, #0a0a0f 0%, #12121f 100%);
+    font-family: system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+    position: relative;
+  }
+  /* Grid */
+  body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px);
+    background-size: 80px 80px;
+  }
+  .chart-area {
+    position: absolute;
+    top: 60px; left: 120px;
+    width: 1040px; height: 380px;
+  }
+  canvas { display: block; }
+  .title {
+    position: absolute;
+    bottom: 100px; left: 140px;
+  }
+  .title h1 {
+    font-size: 52px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -2px;
+    margin-bottom: 8px;
+  }
+  .title .bar {
+    width: 80px; height: 3px;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    border-radius: 2px;
+    margin-bottom: 12px;
+  }
+  .title .sub {
+    font-size: 20px;
+    color: #71717a;
+  }
+  .badges {
+    position: absolute;
+    bottom: 100px; right: 140px;
+    text-align: right;
+    font-family: monospace;
+    font-size: 14px;
+    color: #52525b;
+    line-height: 1.8;
+  }
+  .sanskrit {
+    position: absolute;
+    bottom: 32px; right: 140px;
+    font-family: serif;
+    font-size: 14px;
+    color: #6366f1;
+    opacity: 0.2;
+  }
+</style>
+</head>
+<body>
+  <div class="chart-area">
+    <canvas id="chart" width="1040" height="380"></canvas>
+  </div>
+  <div class="title">
+    <h1>pramana</h1>
+    <div class="bar"></div>
+    <div class="sub">Crowdsourced LLM drift detection</div>
+  </div>
+  <div class="badges">
+    temperature=0.0 &middot; seed=42<br>
+    SHA-256 content hashing<br>
+    OpenAI &middot; Anthropic &middot; Google
+  </div>
+  <div class="sanskrit">प्रमाण — proof, evidence, valid knowledge</div>
+
+  <script>
+    const canvas = document.getElementById('chart');
+    const ctx = canvas.getContext('2d');
+    const W = 1040, H = 380;
+    const pad = { top: 20, right: 20, bottom: 40, left: 40 };
+    const cw = W - pad.left - pad.right;
+    const ch = H - pad.top - pad.bottom;
+
+    // Data: pass rate (%) over 20 weeks
+    const stable = [98.0, 97.5, 98.2, 97.8, 98.0, 97.6, 98.1, 97.9, 98.0];
+    const drop =   [94.0, 87.5, 83.0];
+    const recovery = [84.5, 85.2, 86.0, 86.5, 86.8, 87.0, 86.5, 87.2];
+    const data = [...stable, ...drop, ...recovery];
+    const changeIdx = stable.length;
+
+    function yScale(v) { return pad.top + ch - ((v - 75) / 25) * ch; }
+    function xScale(i) { return pad.left + (i / (data.length - 1)) * cw; }
+
+    // Axes
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 0.5;
+    ctx.setLineDash([4, 8]);
+    for (let pct = 80; pct <= 100; pct += 5) {
+      const y = yScale(pct);
+      ctx.beginPath();
+      ctx.moveTo(pad.left, y);
+      ctx.lineTo(W - pad.right, y);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // Y labels
+    ctx.font = '12px monospace';
+    ctx.fillStyle = '#52525b';
+    ctx.textAlign = 'right';
+    for (let pct = 80; pct <= 100; pct += 5) {
+      ctx.fillText(pct + '%', pad.left - 8, yScale(pct) + 4);
+    }
+
+    // X labels
+    ctx.textAlign = 'center';
+    for (let i = 0; i < data.length; i += 2) {
+      ctx.fillText('W' + (i + 1), xScale(i), H - 8);
+    }
+
+    // Y axis label
+    ctx.save();
+    ctx.translate(12, H / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#71717a';
+    ctx.font = '13px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('pass rate (%)', 0, 0);
+    ctx.restore();
+
+    // Draw line segments
+    function drawLine(startIdx, endIdx, color) {
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      for (let i = startIdx; i <= endIdx; i++) {
+        const x = xScale(i), y = yScale(data[i]);
+        if (i === startIdx) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    drawLine(0, stable.length - 1, '#22c55e');
+    drawLine(stable.length - 1, stable.length + drop.length - 1, '#ef4444');
+    drawLine(stable.length + drop.length - 1, data.length - 1, '#f59e0b');
+
+    // Data points
+    function drawPoints(startIdx, endIdx, color) {
+      ctx.fillStyle = color;
+      for (let i = startIdx; i <= endIdx; i++) {
+        ctx.beginPath();
+        ctx.arc(xScale(i), yScale(data[i]), 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    drawPoints(0, stable.length - 1, '#22c55e');
+    drawPoints(stable.length, stable.length + drop.length - 1, '#ef4444');
+    drawPoints(stable.length + drop.length, data.length - 1, '#f59e0b');
+
+    // Change point line
+    const cx2 = xScale(changeIdx);
+    ctx.strokeStyle = 'rgba(239,68,68,0.5)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(cx2, pad.top);
+    ctx.lineTo(cx2, H - pad.bottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Annotation
+    ctx.fillStyle = 'rgba(239,68,68,0.15)';
+    const lw = 110;
+    ctx.fillRect(cx2 - lw / 2, pad.top + 4, lw, 20);
+    ctx.fillStyle = '#ef4444';
+    ctx.font = '600 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('model updated', cx2, pad.top + 18);
+
+    // Delta label
+    ctx.fillStyle = '#71717a';
+    ctx.font = '13px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('-11.8% from baseline', xScale(changeIdx + 3), yScale(data[changeIdx + 2]) + 30);
+  </script>
+</body>
+</html>

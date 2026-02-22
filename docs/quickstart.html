@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quick Start — Pramana</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <button class="nav-toggle" onclick="document.querySelector('nav').classList.toggle('open')">&#9776;</button>
+  <div class="layout">
+    <nav>
+      <div class="logo">
+        <a href="index.html">pramana</a>
+        <span class="sanskrit">प्रमाण</span>
+      </div>
+      <ul>
+        <li class="nav-section">Getting Started</li>
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="quickstart.html" class="active">Quick Start</a></li>
+        <li><a href="cli.html">CLI Reference</a></li>
+        <li class="nav-section">Internals</li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="providers.html">Providers</a></li>
+        <li><a href="suites.html">Test Suites</a></li>
+        <li><a href="reproducibility.html">Reproducibility</a></li>
+        <li class="nav-section">Community</li>
+        <li><a href="contributing.html">Contributing</a></li>
+      </ul>
+      <div class="ext-links">
+        <a href="https://github.com/syd-ppt/pramana">GitHub</a>
+        <a href="https://pypi.org/project/pramana/">PyPI</a>
+        <a href="https://pramana.pages.dev">Dashboard</a>
+      </div>
+    </nav>
+    <main>
+      <h1>Quick Start</h1>
+      <p class="page-desc">Install, configure, run evals, submit results.</p>
+
+      <h2>1. Install</h2>
+      <pre><code>pip install pramana</code></pre>
+      <p>Requires Python 3.11+.</p>
+
+      <h2>2. Set API key</h2>
+      <p>Set the environment variable for your provider:</p>
+      <pre><code># OpenAI (recommended for reproducibility)
+export OPENAI_API_KEY=sk-...
+
+# Anthropic
+export ANTHROPIC_API_KEY=sk-ant-...
+
+# Google Gemini
+export GEMINI_API_KEY=AI...</code></pre>
+
+      <div class="callout">
+        For scientific drift detection, use <strong>OpenAI API with explicit keys</strong>. It is the only provider with true deterministic output. See <a href="reproducibility.html">Reproducibility</a>.
+      </div>
+
+      <h2>3. Check available models</h2>
+      <pre><code>$ pramana models
+ANTHROPIC
+  • claude-opus-4-6
+  • claude-sonnet-4-6
+  • claude-haiku-4-5
+
+OPENAI
+  • gpt-5.2
+  • gpt-4o
+  • o3-mini
+  ...
+
+GOOGLE
+  • gemini-2.5-pro
+  • gemini-3-flash-preview
+  ...</code></pre>
+
+      <h2>4. Run evals</h2>
+      <pre><code># Smoke test (10 tests, ~$0.05)
+$ pramana run --tier cheap --model gpt-5.2
+
+# Regular monitoring (25 tests, ~$0.25)
+$ pramana run --tier moderate --model gpt-5.2
+
+# Full evaluation (75 tests, ~$1.50)
+$ pramana run --tier comprehensive --model gpt-5.2</code></pre>
+
+      <p>Defaults: <code>temperature=0.0</code>, <code>seed=42</code>, output to <code>results.json</code>.</p>
+
+      <p>Short aliases work:</p>
+      <pre><code>$ pramana run --tier cheap --model opus
+# Resolves to claude-opus-4-6</code></pre>
+
+      <h2>5. Submit results</h2>
+      <pre><code>$ pramana submit results.json
+✓ Submitted 10 results</code></pre>
+      <p>Results go to the <a href="https://pramana.pages.dev">public dashboard</a>. No account required.</p>
+
+      <h2>6. (Optional) Log in</h2>
+      <pre><code>$ pramana login       # GitHub/Google OAuth
+$ pramana whoami      # Check status
+$ pramana logout      # Clear token
+$ pramana delete      # GDPR: delete all your data</code></pre>
+      <p>Authentication enables personalized tracking but is not required for running or submitting.</p>
+
+      <h2>Environment variables</h2>
+      <table>
+        <thead><tr><th>Variable</th><th>Provider</th><th>Required</th></tr></thead>
+        <tbody>
+          <tr><td><code>OPENAI_API_KEY</code></td><td>OpenAI</td><td>For OpenAI models</td></tr>
+          <tr><td><code>ANTHROPIC_API_KEY</code></td><td>Anthropic</td><td>For Claude models</td></tr>
+          <tr><td><code>GEMINI_API_KEY</code></td><td>Google</td><td>For Gemini models</td></tr>
+        </tbody>
+      </table>
+
+      <p>Alternatively, pass <code>--api-key</code> directly:</p>
+      <pre><code>$ pramana run --tier cheap --model gpt-5.2 --api-key sk-...</code></pre>
+    </main>
+  </div>
+</body>
+</html>

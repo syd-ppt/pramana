@@ -1,0 +1,147 @@
+<svg width="1280" height="640" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0f"/>
+      <stop offset="100%" style="stop-color:#12121f"/>
+    </linearGradient>
+    <linearGradient id="line-stable" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#22c55e"/>
+      <stop offset="100%" style="stop-color:#22c55e"/>
+    </linearGradient>
+    <linearGradient id="line-drop" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#22c55e"/>
+      <stop offset="100%" style="stop-color:#ef4444"/>
+    </linearGradient>
+    <linearGradient id="accent-bar" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+    <clipPath id="chart-clip">
+      <rect x="140" y="80" width="1000" height="340"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="640" fill="url(#bg)"/>
+
+  <!-- Subtle grid -->
+  <g opacity="0.035">
+    <line x1="140" y1="80" x2="140" y2="420" stroke="#fff" stroke-width="1"/>
+    <line x1="140" y1="420" x2="1140" y2="420" stroke="#fff" stroke-width="1"/>
+    <!-- Horizontal grid lines -->
+    <line x1="140" y1="148" x2="1140" y2="148" stroke="#fff" stroke-width="0.5" stroke-dasharray="4,8"/>
+    <line x1="140" y1="216" x2="1140" y2="216" stroke="#fff" stroke-width="0.5" stroke-dasharray="4,8"/>
+    <line x1="140" y1="284" x2="1140" y2="284" stroke="#fff" stroke-width="0.5" stroke-dasharray="4,8"/>
+    <line x1="140" y1="352" x2="1140" y2="352" stroke="#fff" stroke-width="0.5" stroke-dasharray="4,8"/>
+    <!-- Vertical grid lines -->
+    <line x1="340" y1="80" x2="340" y2="420" stroke="#fff" stroke-width="0.5" stroke-dasharray="4,8"/>
+    <line x1="540" y1="80" x2="540" y2="420" stroke="#fff" stroke-width="0.5" stroke-dasharray="4,8"/>
+    <line x1="740" y1="80" x2="740" y2="420" stroke="#fff" stroke-width="0.5" stroke-dasharray="4,8"/>
+    <line x1="940" y1="80" x2="940" y2="420" stroke="#fff" stroke-width="0.5" stroke-dasharray="4,8"/>
+  </g>
+
+  <!-- Y-axis labels -->
+  <text x="128" y="100" font-family="monospace" font-size="12" fill="#52525b" text-anchor="end">100%</text>
+  <text x="128" y="168" font-family="monospace" font-size="12" fill="#52525b" text-anchor="end">95%</text>
+  <text x="128" y="236" font-family="monospace" font-size="12" fill="#52525b" text-anchor="end">90%</text>
+  <text x="128" y="304" font-family="monospace" font-size="12" fill="#52525b" text-anchor="end">85%</text>
+  <text x="128" y="372" font-family="monospace" font-size="12" fill="#52525b" text-anchor="end">80%</text>
+  <text x="128" y="428" font-family="monospace" font-size="12" fill="#52525b" text-anchor="end">75%</text>
+
+  <!-- Y-axis title -->
+  <text x="42" y="260" font-family="monospace" font-size="13" fill="#71717a" text-anchor="middle" transform="rotate(-90,42,260)">pass rate (%)</text>
+
+  <!-- X-axis labels (weeks) -->
+  <text x="200" y="445" font-family="monospace" font-size="11" fill="#52525b" text-anchor="middle">W1</text>
+  <text x="340" y="445" font-family="monospace" font-size="11" fill="#52525b" text-anchor="middle">W3</text>
+  <text x="480" y="445" font-family="monospace" font-size="11" fill="#52525b" text-anchor="middle">W5</text>
+  <text x="620" y="445" font-family="monospace" font-size="11" fill="#52525b" text-anchor="middle">W7</text>
+  <text x="760" y="445" font-family="monospace" font-size="11" fill="#52525b" text-anchor="middle">W9</text>
+  <text x="900" y="445" font-family="monospace" font-size="11" fill="#52525b" text-anchor="middle">W11</text>
+  <text x="1040" y="445" font-family="monospace" font-size="11" fill="#52525b" text-anchor="middle">W13</text>
+
+  <!-- Confidence band (fill area around the line, pre-drop) -->
+  <polygon
+    points="160,108 230,106 300,110 370,104 440,108 510,106 580,110 620,108 620,120 580,122 510,118 440,120 370,116 300,122 230,118 160,120"
+    fill="#22c55e" opacity="0.06"
+    clip-path="url(#chart-clip)"
+  />
+
+  <!-- Confidence band (post-drop) -->
+  <polygon
+    points="740,264 810,256 880,248 950,244 1020,240 1090,238 1090,260 1020,262 950,266 880,270 810,278 740,286"
+    fill="#f59e0b" opacity="0.06"
+    clip-path="url(#chart-clip)"
+  />
+
+  <!-- Main data line: stable baseline -->
+  <polyline
+    points="160,114 200,112 230,112 270,114 300,116 340,112 370,110 410,114 440,114 480,112 510,112 550,114 580,116 610,114"
+    fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"
+    clip-path="url(#chart-clip)"
+  />
+
+  <!-- Drop segment -->
+  <polyline
+    points="610,114 640,130 660,168 680,220 700,258 720,272 740,275"
+    fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"
+    clip-path="url(#chart-clip)"
+  />
+
+  <!-- Recovery / new baseline -->
+  <polyline
+    points="740,275 770,268 800,260 840,256 880,254 920,252 960,254 1000,250 1040,252 1080,248 1120,250"
+    fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"
+    clip-path="url(#chart-clip)"
+  />
+
+  <!-- Data points on stable line -->
+  <g fill="#22c55e">
+    <circle cx="160" cy="114" r="3"/>
+    <circle cx="230" cy="112" r="3"/>
+    <circle cx="300" cy="116" r="3"/>
+    <circle cx="370" cy="110" r="3"/>
+    <circle cx="440" cy="114" r="3"/>
+    <circle cx="510" cy="112" r="3"/>
+    <circle cx="580" cy="116" r="3"/>
+  </g>
+
+  <!-- Data points on drop -->
+  <g fill="#ef4444">
+    <circle cx="640" cy="130" r="3"/>
+    <circle cx="680" cy="220" r="4"/>
+    <circle cx="720" cy="272" r="3"/>
+  </g>
+
+  <!-- Data points on new baseline -->
+  <g fill="#f59e0b">
+    <circle cx="770" cy="268" r="3"/>
+    <circle cx="840" cy="256" r="3"/>
+    <circle cx="920" cy="252" r="3"/>
+    <circle cx="1000" cy="250" r="3"/>
+    <circle cx="1080" cy="248" r="3"/>
+  </g>
+
+  <!-- Annotation: vertical dashed line at change point -->
+  <line x1="650" y1="80" x2="650" y2="420" stroke="#ef4444" stroke-width="1" stroke-dasharray="6,4" opacity="0.6"/>
+
+  <!-- Annotation label -->
+  <rect x="632" y="86" width="120" height="22" rx="4" fill="#ef4444" opacity="0.15"/>
+  <text x="692" y="101" font-family="monospace" font-size="12" fill="#ef4444" text-anchor="middle" font-weight="600">model updated</text>
+
+  <!-- Delta annotation -->
+  <text x="780" y="310" font-family="monospace" font-size="13" fill="#71717a">-11.8% from baseline</text>
+
+  <!-- Project name and tagline -->
+  <text x="140" y="530" font-family="system-ui, -apple-system, sans-serif" font-size="52" font-weight="800" fill="#ffffff" letter-spacing="-2">pramana</text>
+  <rect x="140" y="545" width="80" height="3" rx="1.5" fill="url(#accent-bar)"/>
+  <text x="140" y="580" font-family="system-ui, -apple-system, sans-serif" font-size="20" fill="#71717a">Crowdsourced LLM drift detection</text>
+
+  <!-- Right-side badges -->
+  <text x="1140" y="530" font-family="monospace" font-size="14" fill="#52525b" text-anchor="end">temperature=0.0 · seed=42</text>
+  <text x="1140" y="555" font-family="monospace" font-size="14" fill="#52525b" text-anchor="end">SHA-256 content hashing</text>
+  <text x="1140" y="580" font-family="monospace" font-size="14" fill="#52525b" text-anchor="end">OpenAI · Anthropic · Google</text>
+
+  <!-- Subtle devanagari -->
+  <text x="1140" y="608" font-family="serif" font-size="14" fill="#6366f1" opacity="0.2" text-anchor="end">प्रमाण — proof, evidence, valid knowledge</text>
+</svg>
