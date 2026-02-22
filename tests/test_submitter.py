@@ -6,7 +6,6 @@ import respx
 
 from pramana.submitter import _post_single
 
-
 SUBMIT_URL = "https://test.pramana.dev/api/submit"
 HEADERS = {"Content-Type": "application/json"}
 PAYLOAD = {"model_id": "gpt-4.1", "prompt_id": "test-001", "output": "hello"}
