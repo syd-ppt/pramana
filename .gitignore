@@ -77,7 +77,4 @@ backup/
 *.log
 logs/
 .docs-internal/
-AUTH_IMPLEMENTATION.md
-/extract_*.py
-/submit_*.py
-/upload_*.py
+/suites/
