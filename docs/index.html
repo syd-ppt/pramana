@@ -7,11 +7,11 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://syd-ppt.github.io/pramana/">
   <meta property="og:title" content="Pramana — Crowdsourced LLM Drift Detection">
-  <meta property="og:description" content="Run reproducible evals against LLM APIs. Detect silent model changes via crowdsourced statistical analysis.">
+  <meta property="og:description" content="Run reproducible evals against LLM APIs. Detect silent model changes via crowdsourced output consistency tracking.">
   <meta property="og:image" content="https://syd-ppt.github.io/pramana/og-image.svg">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Pramana — Crowdsourced LLM Drift Detection">
-  <meta name="twitter:description" content="Run reproducible evals against LLM APIs. Detect silent model changes via crowdsourced statistical analysis.">
+  <meta name="twitter:description" content="Run reproducible evals against LLM APIs. Detect silent model changes via crowdsourced output consistency tracking.">
   <meta name="twitter:image" content="https://syd-ppt.github.io/pramana/og-image.svg">
   <meta name="description" content="Pramana: crowdsourced LLM drift detection. Run reproducible evals, compare results, catch silent model changes.">
   <link rel="stylesheet" href="style.css">
@@ -75,7 +75,7 @@ $ pramana submit results.json
       <ol>
         <li>Runs fixed prompts against provider APIs with deterministic parameters (<code>temperature=0.0</code>, <code>seed=42</code>)</li>
         <li>Hashes results (SHA-256 of model + prompt + output) for deduplication</li>
-        <li>Submits to a public dataset where statistical analysis detects changes across users and time</li>
+        <li>Submits to a public dataset where hash-based consistency tracking detects changes across users and time</li>
       </ol>
 
       <h2>Pages</h2>
