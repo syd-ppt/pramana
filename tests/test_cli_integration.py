@@ -73,15 +73,15 @@ class TestAuthCommands:
 
     def test_login_opens_browser(self, runner, temp_config, monkeypatch):
         """Should open browser and store token."""
-        mock_webbrowser = MagicMock()
-        monkeypatch.setattr("pramana.auth.webbrowser.open", mock_webbrowser)
+        mock_open_browser = MagicMock()
+        monkeypatch.setattr("pramana.auth._open_browser", mock_open_browser)
 
         # Mock user input
         result = runner.invoke(cli, ["login"], input="test_token_123\n")
 
         assert result.exit_code == 0
         assert "Logged in" in result.output
-        mock_webbrowser.assert_called_once()
+        mock_open_browser.assert_called_once()
 
     def test_whoami_not_logged_in(self, runner, temp_config):
         """Should show not logged in."""

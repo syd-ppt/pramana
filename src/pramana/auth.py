@@ -1,7 +1,10 @@
 """CLI authentication - browser-based token flow."""
 
 import json
+import platform
+import shutil
 import stat
+import subprocess
 import webbrowser
 from pathlib import Path
 
@@ -11,12 +14,26 @@ CONFIG_FILE = CONFIG_DIR / "config.json"
 DEFAULT_API_URL = "https://pramana.pages.dev"
 
 
+def _open_browser(url: str) -> None:
+    """Open URL in browser, with WSL support."""
+    if "microsoft" in platform.uname().release.lower():
+        # WSL: webbrowser.open() fails — use Windows browser via cmd.exe or wslview
+        wslview = shutil.which("wslview")
+        if wslview:
+            subprocess.Popen([wslview, url])
+        else:
+            subprocess.Popen(["cmd.exe", "/c", "start", url.replace("&", "^&")])
+    else:
+        webbrowser.open(url)
+
+
 def login(api_url: str = DEFAULT_API_URL) -> None:
     """Open browser to get CLI token."""
-    print(f"Opening {api_url}/cli-token in your browser...")
+    url = f"{api_url}/cli-token"
+    print(f"Opening {url} in your browser...")
     print("Copy your token and paste it here.")
 
-    webbrowser.open(f"{api_url}/cli-token")
+    _open_browser(url)
     token = input("\nPaste token: ").strip()
 
     if not token:
