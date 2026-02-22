@@ -207,15 +207,14 @@ Submit a PR with your additions!
        │
        ├─► Provider APIs (OpenAI, Anthropic, Google)
        │
-       └─► Submit results via API (pramana-eval.vercel.app)
-              └─► B2 Parquet storage (handled by backend)
+       └─► Submit results via API (pramana.pages.dev)
 ```
 
 **Local-first design:**
 - No account required to run tests
 - Results saved to local JSON files
 - Submit to community dashboard via API
-- No storage credentials needed — backend handles B2
+- No storage credentials needed — backend handles persistence
 - Bring your own API keys
 
 ---
@@ -230,7 +229,7 @@ Submit a PR with your additions!
 - [x] GDPR compliance (deletion & anonymization)
 - [ ] Additional providers (Google, Cohere, Mistral)
 - [ ] Custom test suite support
-- [ ] Personalized dashboard with PyArrow aggregation
+- [ ] Personalized dashboard
 - [ ] LLM judge assertions
 - [ ] Semantic similarity assertions
 

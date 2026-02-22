@@ -177,12 +177,15 @@ def models(refresh):
 
 @cli.command()
 @click.argument("results_file", type=click.Path())
-@click.option("--api-url", default=None, help="API endpoint URL (default: from login config or https://pramana-eval.vercel.app)")
+@click.option(
+    "--api-url", default=None,
+    help=f"API endpoint URL (default: from login config or {auth.DEFAULT_API_URL})",
+)
 def submit(results_file, api_url):
     """Submit results to Pramana platform."""
     # Use configured API URL from login if available
     if api_url is None:
-        api_url = auth.get_api_url() or "https://pramana-eval.vercel.app"
+        api_url = auth.get_api_url() or auth.DEFAULT_API_URL
     asyncio.run(_submit_async(results_file, api_url))
 
 
@@ -243,7 +246,7 @@ async def _submit_async(results_file, api_url):
 
 
 @cli.command()
-@click.option("--api-url", default="https://pramana-eval.vercel.app", help="API endpoint URL")
+@click.option("--api-url", default=auth.DEFAULT_API_URL, help="API endpoint URL")
 def login(api_url):
     """Log in to enable personalized tracking."""
     auth.login(api_url)

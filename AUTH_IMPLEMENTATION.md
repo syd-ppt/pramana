@@ -53,7 +53,7 @@ pramana submit results.json
 ```bash
 # 1. Login (one-time setup)
 pramana login
-# → Opens https://pramana-eval.vercel.app/cli-token in browser
+# → Opens https://pramana.pages.dev/cli-token in browser
 # → User signs in with GitHub/Google (OAuth handled by API)
 # → User copies token and pastes in terminal
 # ✓ Logged in! Your submissions will now be linked to your account.
@@ -61,7 +61,7 @@ pramana login
 # 2. Check login status
 pramana whoami
 # Logged in (token: abc123def456...)
-# API URL: https://pramana-eval.vercel.app
+# API URL: https://pramana.pages.dev
 
 # 3. Submit with authentication
 pramana run --tier cheap --model gpt-4
@@ -88,7 +88,7 @@ pramana submit results.json --api-url https://localhost:8000
   ```json
   {
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "api_url": "https://pramana-eval.vercel.app"
+    "api_url": "https://pramana.pages.dev"
   }
   ```
 - **Security**: Config file is stored in user's home directory (not in repo)
@@ -144,15 +144,15 @@ The following needs to be implemented in the `pramana-api` private repository:
 3. **API validation** (`/api/routes/submit.py`)
    - JWT validation middleware
    - User ID extraction from token
-   - B2 storage partitioning by user_id
+   - Storage partitioning by user_id
 
 4. **Personalized dashboard** (`/app/my-stats/page.tsx`)
    - "You vs Crowd" statistics
-   - PyArrow aggregation filtered by user_id
+   - Aggregation filtered by user_id
 
 5. **GDPR compliance** (`/api/routes/user.py`)
    - `DELETE /user/me` endpoint
-   - B2 file deletion by user_id partition
+   - Data deletion by user_id partition
 
 ## Backward Compatibility
 
