@@ -13,13 +13,9 @@ logger = logging.getLogger(__name__)
 MAX_RETRIES = 5
 INITIAL_BACKOFF = 1.0
 
-# Default API endpoint (configurable via PRAMANA_API_URL env var)
-DEFAULT_API_URL = "https://pramana-eval.vercel.app"
-
-
 def get_api_url() -> str:
     """Get API URL from environment or use default."""
-    return os.getenv("PRAMANA_API_URL", DEFAULT_API_URL)
+    return os.getenv("PRAMANA_API_URL", auth.DEFAULT_API_URL)
 
 
 def _build_per_result_payloads(results_data: dict) -> list[dict]:

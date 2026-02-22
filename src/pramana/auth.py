@@ -8,8 +8,10 @@ from pathlib import Path
 CONFIG_DIR = Path.home() / ".pramana"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 
+DEFAULT_API_URL = "https://pramana.pages.dev"
 
-def login(api_url: str = "https://pramana-eval.vercel.app") -> None:
+
+def login(api_url: str = DEFAULT_API_URL) -> None:
     """Open browser to get CLI token."""
     print(f"Opening {api_url}/cli-token in your browser...")
     print("Copy your token and paste it here.")
