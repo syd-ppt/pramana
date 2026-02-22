@@ -48,17 +48,38 @@ def _build_per_result_payloads(results_data: dict) -> list[dict]:
     return payloads
 
 
+TRANSIENT_EXCEPTIONS = (
+    httpx.ConnectError,
+    httpx.ConnectTimeout,
+    httpx.ReadTimeout,
+    httpx.WriteTimeout,
+    httpx.PoolTimeout,
+    OSError,
+)
+
+
 async def _post_single(
     client: httpx.AsyncClient,
     url: str,
     payload: dict,
     headers: dict,
 ) -> dict:
-    """POST a single result with retry on 429 rate limits."""
+    """POST a single result with retry on transient failures and 429 rate limits."""
     backoff = INITIAL_BACKOFF
 
     for attempt in range(MAX_RETRIES + 1):
-        response = await client.post(url, json=payload, headers=headers)
+        try:
+            response = await client.post(url, json=payload, headers=headers)
+        except TRANSIENT_EXCEPTIONS as exc:
+            if attempt == MAX_RETRIES:
+                raise
+            logger.info(
+                "Transient error (%s), retrying in %.1fs (attempt %d/%d)",
+                exc, backoff, attempt + 1, MAX_RETRIES,
+            )
+            await asyncio.sleep(backoff)
+            backoff = min(backoff * 2, 60.0)
+            continue
 
         if response.status_code == 429:
             if attempt == MAX_RETRIES:
