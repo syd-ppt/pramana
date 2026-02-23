@@ -54,7 +54,7 @@ class ClaudeCodeProvider(BaseProvider):
                     "Claude Code query failed: SDK encountered an unknown message type "
                     "before receiving a response. Upgrade claude_agent_sdk."
                 ) from e
-            logger.warning("ClaudeSDKError after response captured, returning partial result: %s", e)
+            logger.warning("ClaudeSDKError after response captured: %s", e)
         except Exception as e:
             raise RuntimeError(f"Claude Code query failed: {e}") from e
 
