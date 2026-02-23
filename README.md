@@ -86,7 +86,7 @@ You run pramana ──► Fixed prompts hit the API ──► Results hashed & s
 Other users run pramana ──► Same prompts ──► Results compared
                                                          │
                                               Drift detected via
-                                              statistical analysis
+                                              output consistency tracking
 ```
 
 - **Content-addressable hashing** — SHA-256 of (model, prompt, output) for deduplication
