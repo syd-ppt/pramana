@@ -1,9 +1,12 @@
 """Claude Code provider using Claude Agent SDK (for subscription users)."""
 
+import logging
 import time
 
 from pramana.providers.base import BaseProvider
 from pramana.providers.registry import register
+
+logger = logging.getLogger(__name__)
 
 
 @register("anthropic", "subscription", sdk_package="claude_agent_sdk")
@@ -26,8 +29,7 @@ class ClaudeCodeProvider(BaseProvider):
         Note: Claude Code uses temperature=1.0 by default and does not support
         parameter control. Results are non-deterministic.
         """
-        from claude_agent_sdk import query
-        from claude_agent_sdk._errors import MessageParseError
+        from claude_agent_sdk import ClaudeSDKError, query
         from claude_agent_sdk.types import AssistantMessage
 
         start_ms = int(time.time() * 1000)
@@ -44,14 +46,15 @@ class ClaudeCodeProvider(BaseProvider):
                         response_text = "".join(
                             block.text for block in msg.content if hasattr(block, "text")
                         )
-        except MessageParseError:
+        except ClaudeSDKError as e:
             # SDK doesn't recognize newer event types (e.g. rate_limit_event).
             # If we already captured a response, use it; otherwise re-raise.
             if response_text is None:
                 raise RuntimeError(
                     "Claude Code query failed: SDK encountered an unknown message type "
                     "before receiving a response. Upgrade claude_agent_sdk."
-                )
+                ) from e
+            logger.warning("ClaudeSDKError after response captured, returning partial result: %s", e)
         except Exception as e:
             raise RuntimeError(f"Claude Code query failed: {e}") from e
 
