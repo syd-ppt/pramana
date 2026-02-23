@@ -72,7 +72,7 @@ All tiers cover 6 categories: reasoning, factual, instruction following, coding,
 |----------|-------------|------|-----------------|
 | **OpenAI** | ✅ Enforced | ✅ Enforced | **High** |
 | **Anthropic** | ✅ Enforced | ❌ Ignored | **Low** |
-| **Google** | Coming soon | — | — |
+| **Google** | ✅ Enforced | ✅ Enforced | **Medium** |
 
 For scientific drift detection, **use OpenAI API with explicit keys.** See [REPRODUCIBILITY.md](REPRODUCIBILITY.md).
 

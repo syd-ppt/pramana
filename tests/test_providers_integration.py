@@ -5,8 +5,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pramana.providers.anthropic import AnthropicProvider
-from pramana.providers.claude_code import ClaudeCodeProvider
 from pramana.providers.openai import OpenAIProvider
+
+try:
+    from pramana.providers.claude_code import ClaudeCodeProvider
+
+    _has_claude_sdk = True
+except ImportError:
+    _has_claude_sdk = False
 
 
 class TestOpenAIProvider:
@@ -247,6 +253,7 @@ class TestProviderErrorHandling:
             await provider.complete("Test", temperature=0.0, seed=42)
 
 
+@pytest.mark.skipif(not _has_claude_sdk, reason="claude_agent_sdk not installed")
 class TestClaudeCodeProvider:
     """Test Claude Code provider SDK error handling."""
 
