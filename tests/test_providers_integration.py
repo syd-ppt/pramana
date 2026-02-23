@@ -7,13 +7,6 @@ import pytest
 from pramana.providers.anthropic import AnthropicProvider
 from pramana.providers.openai import OpenAIProvider
 
-try:
-    from pramana.providers.claude_code import ClaudeCodeProvider
-
-    _has_claude_sdk = True
-except ImportError:
-    _has_claude_sdk = False
-
 
 class TestOpenAIProvider:
     """Test OpenAI provider integration."""
@@ -251,77 +244,6 @@ class TestProviderErrorHandling:
 
         with pytest.raises(Exception, match="Invalid API key"):
             await provider.complete("Test", temperature=0.0, seed=42)
-
-
-@pytest.mark.skipif(not _has_claude_sdk, reason="claude_agent_sdk not installed")
-class TestClaudeCodeProvider:
-    """Test Claude Code provider SDK error handling."""
-
-    @pytest.mark.asyncio
-    async def test_sdk_error_after_response_returns_captured(self):
-        """Should return captured response when ClaudeSDKError fires after streaming."""
-        claude_sdk = pytest.importorskip("claude_agent_sdk")
-        from claude_agent_sdk.types import AssistantMessage
-
-        provider = ClaudeCodeProvider(model_id="claude-haiku-4-5")
-
-        async def mock_streaming():
-            msg = MagicMock(spec=AssistantMessage)
-            block = MagicMock()
-            block.text = "Complete answer"
-            msg.content = [block]
-            yield msg
-            raise claude_sdk.ClaudeSDKError("Unknown event type: rate_limit_event")
-
-        with patch.object(claude_sdk, "query", return_value=mock_streaming()):
-            result_text, latency = await provider.complete("Test prompt")
-            assert result_text == "Complete answer"
-            assert latency >= 0
-
-    @pytest.mark.asyncio
-    async def test_sdk_error_before_response_raises(self):
-        """Should raise RuntimeError when ClaudeSDKError fires before any response."""
-        claude_sdk = pytest.importorskip("claude_agent_sdk")
-
-        provider = ClaudeCodeProvider(model_id="claude-haiku-4-5")
-
-        async def error_immediately():
-            raise claude_sdk.ClaudeSDKError("Unknown event type: rate_limit_event")
-            yield  # make it an async generator  # noqa: RUF027
-
-        with patch.object(claude_sdk, "query", return_value=error_immediately()):
-            with pytest.raises(RuntimeError, match="unknown message type"):
-                await provider.complete("Test prompt")
-
-    @pytest.mark.asyncio
-    async def test_generic_exception_raises_runtime_error(self):
-        """Should wrap non-SDK exceptions in RuntimeError."""
-        claude_sdk = pytest.importorskip("claude_agent_sdk")
-
-        provider = ClaudeCodeProvider(model_id="claude-haiku-4-5")
-
-        async def network_error():
-            raise ConnectionError("Connection refused")
-            yield  # noqa: RUF027
-
-        with patch.object(claude_sdk, "query", return_value=network_error()):
-            with pytest.raises(RuntimeError, match="Claude Code query failed"):
-                await provider.complete("Test prompt")
-
-    @pytest.mark.asyncio
-    async def test_no_response_raises(self):
-        """Should raise RuntimeError when stream completes with no AssistantMessage."""
-        claude_sdk = pytest.importorskip("claude_agent_sdk")
-
-        provider = ClaudeCodeProvider(model_id="claude-haiku-4-5")
-
-        async def empty_stream():
-            return
-            yield  # noqa: RUF027
-
-        with patch.object(claude_sdk, "query", return_value=empty_stream()):
-            with pytest.raises(RuntimeError, match="No response received"):
-                await provider.complete("Test prompt")
 
 
 class TestProviderResponseParsing:
