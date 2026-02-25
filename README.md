@@ -22,8 +22,13 @@ There's no standard way to notice — let alone measure — these changes.
 ## The Fix
 
 ```bash
-git clone https://github.com/syd-ppt/pramana && cd pramana
-uv pip install -e ".[dev]"
+uvx pramana-ai run --tier cheap --model gpt-5.2
+```
+
+or install globally:
+
+```bash
+uv tool install pramana-ai
 ```
 
 ```bash
@@ -45,7 +50,7 @@ pramana models
 
 # Run evals (auto-detects provider from model name)
 export OPENAI_API_KEY=sk-...
-pramana run --tier cheap --model gpt-4o
+pramana run --tier cheap --model gpt-5
 
 # Aliases work too
 pramana run --tier cheap --model opus
@@ -111,8 +116,8 @@ No login required to run evals or submit results. Auth enables personalized trac
 
 ```bash
 git clone https://github.com/syd-ppt/pramana && cd pramana
-uv pip install -e ".[dev]"
-pytest tests/
+uv sync --extra dev
+uv run python -m pytest tests/
 ```
 
 Backend: [`pramana-api`](https://github.com/syd-ppt/pramana-api) · Dashboard: [pramana.pages.dev](https://pramana.pages.dev)
