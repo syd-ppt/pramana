@@ -45,6 +45,7 @@ Issues = "https://github.com/syd-ppt/pramana/issues"
 
 [project.scripts]
 pramana = "pramana.cli:cli"
+pramana-ai = "pramana.cli:cli"
 
 [build-system]
 requires = ["hatchling"]
