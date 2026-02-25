@@ -77,4 +77,5 @@ backup/
 *.log
 logs/
 .docs-internal/
+.private/
 /suites/

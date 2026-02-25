@@ -22,6 +22,23 @@ from pramana.protocol import (
 from pramana.providers.base import BaseProvider
 
 
+def load_suite(suite_path: Path) -> tuple[list[TestCase], str, str]:
+    """Load test cases and compute suite metadata.
+
+    Returns:
+        (test_cases, suite_hash, suite_version)
+    """
+    test_cases = []
+    for line in suite_path.read_text().strip().split("\n"):
+        if line.strip():
+            data = json.loads(line)
+            test_cases.append(TestCase(**data))
+
+    suite_hash = hash_suite(suite_path)
+    suite_version = f"v1.0-{suite_path.stem}"
+    return test_cases, suite_hash, suite_version
+
+
 async def run_eval(
     suite_path: Path,
     provider: BaseProvider,
@@ -30,16 +47,7 @@ async def run_eval(
     on_progress: Callable[[int, int, TestResult], None] | None = None,
 ) -> EvalResults:
     """Execute eval suite against provider."""
-    # Load test cases
-    test_cases = []
-    for line in suite_path.read_text().strip().split("\n"):
-        if line.strip():
-            data = json.loads(line)
-            test_cases.append(TestCase(**data))
-
-    # Compute suite hash
-    suite_hash = hash_suite(suite_path)
-    suite_version = f"v1.0-{suite_path.stem}"
+    test_cases, suite_hash, suite_version = load_suite(suite_path)
 
     # Run tests
     total = len(test_cases)

@@ -18,8 +18,8 @@ from rich.progress import (
 from pramana import auth
 from pramana.models import detect_provider, resolve_alias
 from pramana.providers.registry import list_unavailable_hints, resolve_provider
-from pramana.runner import run_eval
-from pramana.storage import append_result, load_results, remove_run
+from pramana.runner import load_suite, run_eval
+from pramana.storage import load_results, remove_run, upsert_run
 from pramana.submitter import submit_results
 
 console = Console()
@@ -102,11 +102,57 @@ async def _run_async(tier, model, output, temperature, seed, offline, api_key, u
 
     provider = entry.cls(model_id=model, api_key=api_key)
 
-    # Run evals
-    console.print(f"[cyan]Running {tier} suite against {model}...[/cyan]")
+    # Pre-compute suite metadata and run metadata before tests start
+    from datetime import datetime, timezone
 
-    # Count tests upfront for progress bar
-    test_count = sum(1 for line in suite_path.read_text().strip().split("\n") if line.strip())
+    from pramana import __version__
+    from pramana.protocol import EvalResults, RunMetadata, RunSummary
+
+    test_cases, suite_hash, suite_version = load_suite(suite_path)
+    test_count = len(test_cases)
+
+    metadata = RunMetadata(
+        timestamp=datetime.now(timezone.utc),
+        model_id=model,
+        temperature=temperature,
+        seed=seed,
+        runner_version=__version__,
+    )
+
+    output_path = Path(output)
+    accumulated: list = []  # TestResult objects collected so far
+    block_index: int | None = None  # index in results file; None until first write
+
+    def _save_incremental(result) -> None:
+        """Persist current results to disk after each test."""
+        nonlocal block_index
+        accumulated.append(result)
+
+        passed = sum(1 for r in accumulated if r.assertion_result.passed)
+        skipped = sum(
+            1 for r in accumulated
+            if r.assertion_result.details.get("skipped", False)
+        )
+        total = len(accumulated)
+        scoreable = total - skipped
+        summary = RunSummary(
+            total=total,
+            passed=passed,
+            skipped=skipped,
+            pass_rate=passed / scoreable if scoreable else 0.0,
+        )
+
+        partial = EvalResults(
+            suite_version=suite_version,
+            suite_hash=suite_hash,
+            run_metadata=metadata,
+            results=accumulated,
+            summary=summary,
+        )
+        block_index = upsert_run(output_path, partial, block_index)
+
+    # Run evals with incremental persistence
+    console.print(f"[cyan]Running {tier} suite against {model}...[/cyan]")
 
     with Progress(
         SpinnerColumn(),
@@ -119,6 +165,7 @@ async def _run_async(tier, model, output, temperature, seed, offline, api_key, u
         task = progress.add_task("Running tests", total=test_count)
 
         def on_progress(completed: int, total: int, result) -> None:
+            _save_incremental(result)
             passed = result.assertion_result.passed
             status = "[green]pass[/green]" if passed else "[red]fail[/red]"
             desc = f"Test {result.test_id} {status}"
@@ -141,16 +188,49 @@ async def _run_async(tier, model, output, temperature, seed, offline, api_key, u
         console.print(f"[yellow]Skipped: {skipped} (unimplemented assertion types)[/yellow]")
     console.print(f"[cyan]Pass rate: {results.summary.pass_rate:.1%}[/cyan]")
 
-    # Save results (append to existing blocks)
-    output_path = Path(output)
-    block_count = append_result(output_path, results)
+    # Final save — overwrite with runner's canonical EvalResults (includes final summary)
+    if block_index is not None:
+        upsert_run(output_path, results, block_index)
+
+    pending = len(load_results(output_path))
     console.print(
-        f"\n[green]Results saved to: {output_path}[/green] ({block_count} pending run(s))"
+        f"\n[green]Results saved to: {output_path}[/green] ({pending} pending run(s))"
     )
 
-    if not offline:
+    # Auto-submit unless --offline
+    if offline:
+        return
+
+    auth_header = auth.get_auth_header()
+    if not auth_header:
         console.print(
-            f"\n[yellow]Note: Use 'pramana submit {output_path}' to upload results[/yellow]"
+            "\n[yellow]Not logged in — results saved locally.[/yellow]"
+        )
+        console.print(
+            "[yellow]Run 'pramana login' then 'pramana submit "
+            f"{output_path}' to upload.[/yellow]"
+        )
+        return
+
+    api_url = auth.get_api_url() or auth.DEFAULT_API_URL
+    console.print(f"\n[cyan]Submitting to {api_url}...[/cyan]")
+
+    try:
+        block = load_results(output_path)[block_index]
+        response = await submit_results(block, api_url)
+        remove_run(output_path, block_index)
+        submitted = response.get("submitted", 0)
+        duplicates = response.get("duplicates", 0)
+        console.print(f"[green]✓[/green] Submitted {submitted} result(s)")
+        if duplicates:
+            console.print(
+                f"[yellow]{duplicates} duplicate(s) already on server[/yellow]"
+            )
+    except Exception as e:
+        console.print(f"[red]Auto-submit failed: {e}[/red]")
+        console.print(
+            f"[yellow]Results remain in {output_path} — "
+            f"retry with 'pramana submit {output_path}'[/yellow]"
         )
 
 

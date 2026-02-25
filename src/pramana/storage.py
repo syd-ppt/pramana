@@ -56,6 +56,38 @@ def append_result(path: Path, results: EvalResults) -> int:
     return len(runs)
 
 
+def upsert_run(path: Path, results: EvalResults, index: int | None = None) -> int:
+    """Write or replace a run block in the results file.
+
+    Args:
+        path: Path to the results JSON file.
+        results: Evaluation results to write.
+        index: If None, append a new block. If given, replace that block.
+
+    Returns:
+        Index of the written block.
+
+    Raises:
+        IndexError: If index is out of range.
+    """
+    runs = load_results(path)
+    block = json.loads(results.model_dump_json())
+
+    if index is None:
+        runs.append(block)
+        written = len(runs) - 1
+    else:
+        if index < 0 or index >= len(runs):
+            raise IndexError(
+                f"Run index {index} out of range (0..{len(runs) - 1})"
+            )
+        runs[index] = block
+        written = index
+
+    path.write_text(json.dumps(runs, indent=2))
+    return written
+
+
 def remove_run(path: Path, index: int) -> int:
     """Remove a result run by index and rewrite the file.
 
