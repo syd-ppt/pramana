@@ -2,12 +2,11 @@
 
 # pramana &nbsp;·&nbsp; प्रमाण
 
-**Did your LLM get worse, or did you?**
+**Track whether LLM API outputs stay consistent over time.**
 
 Crowdsourced drift detection for LLM APIs. Run reproducible evals, compare results over time, catch silent model changes.
 
 [![Tests](https://github.com/syd-ppt/pramana/workflows/Tests/badge.svg)](https://github.com/syd-ppt/pramana/actions)
-[![PyPI](https://img.shields.io/pypi/v/pramana)](https://pypi.org/project/pramana/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 </div>
@@ -23,7 +22,8 @@ There's no standard way to notice — let alone measure — these changes.
 ## The Fix
 
 ```bash
-pip install pramana
+git clone https://github.com/syd-ppt/pramana && cd pramana
+uv pip install -e ".[dev]"
 ```
 
 ```bash
@@ -50,7 +50,7 @@ pramana run --tier cheap --model gpt-4o
 # Aliases work too
 pramana run --tier cheap --model opus
 
-# Submit to the public leaderboard
+# Submit to the community dashboard
 pramana submit results.json
 ```
 
@@ -133,6 +133,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 **pramana** (प्रमाण) — Sanskrit for *proof, evidence, valid knowledge*
 
-[Docs](https://syd-ppt.github.io/pramana) · [Dashboard](https://pramana.pages.dev) · [PyPI](https://pypi.org/project/pramana/) · [Issues](https://github.com/syd-ppt/pramana/issues)
+[Docs](https://syd-ppt.github.io/pramana) · [Dashboard](https://pramana.pages.dev) · [Issues](https://github.com/syd-ppt/pramana/issues)
 
 </div>
