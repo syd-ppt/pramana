@@ -65,17 +65,24 @@ class ClaudeCodeProvider(BaseProvider):
         from claude_agent_sdk import query
         from claude_agent_sdk.types import AssistantMessage, ClaudeAgentOptions
 
+        if temperature != 1.0 or seed is not None:
+            logger.warning(
+                "Claude Code ignores temperature/seed — "
+                "results will NOT be reproducible (model=%s)",
+                self.model_id,
+            )
+
         start_ms = int(time.time() * 1000)
 
         prompt = input_text
-        options = ClaudeAgentOptions(
-            model=self.model_id,
-            permission_mode="bypassPermissions",
-            max_turns=1,
-        )
-
+        opts_kwargs: dict[str, object] = {
+            "model": self.model_id,
+            "permission_mode": "bypassPermissions",
+            "max_turns": 1,
+        }
         if system_prompt:
-            options.system_prompt = system_prompt
+            opts_kwargs["system_prompt"] = system_prompt
+        options = ClaudeAgentOptions(**opts_kwargs)
 
         response_text = None
         try:
