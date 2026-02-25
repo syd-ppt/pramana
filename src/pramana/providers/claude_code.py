@@ -63,13 +63,19 @@ class ClaudeCodeProvider(BaseProvider):
         parameter control. Results are non-deterministic.
         """
         from claude_agent_sdk import query
-        from claude_agent_sdk.types import AssistantMessage
+        from claude_agent_sdk.types import AssistantMessage, ClaudeAgentOptions
 
         start_ms = int(time.time() * 1000)
 
         prompt = input_text
+        options = ClaudeAgentOptions(
+            model=self.model_id,
+            permission_mode="bypassPermissions",
+            max_turns=1,
+        )
+
         if system_prompt:
-            prompt = f"System: {system_prompt}\n\nUser: {input_text}"
+            options.system_prompt = system_prompt
 
         response_text = None
         try:
@@ -77,7 +83,7 @@ class ClaudeCodeProvider(BaseProvider):
                 "claude_agent_sdk._internal.client.parse_message",
                 _make_patched_parser(),
             ):
-                async for msg in query(prompt=prompt):
+                async for msg in query(prompt=prompt, options=options):
                     if isinstance(msg, AssistantMessage) and response_text is None:
                         if msg.content:
                             response_text = "".join(
