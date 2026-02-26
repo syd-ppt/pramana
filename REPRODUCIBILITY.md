@@ -137,7 +137,7 @@ pramana run --tier cheap --model claude-opus-4-6 --use-subscription
 Run the test suite to verify assertion logic and provider wiring:
 
 ```bash
-pytest tests/
+uv run python -m pytest tests/
 ```
 
 For empirical variance measurement, run the same eval multiple times and compare result hashes.

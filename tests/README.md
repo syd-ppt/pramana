@@ -23,40 +23,40 @@ tests/
 python --version  # Should be 3.11 or higher
 
 # Install with dev dependencies
-pip install -e ".[dev]"
+uv sync --extra dev
 ```
 
 ### Run All Tests
 
 ```bash
-pytest tests/
+uv run python -m pytest tests/
 ```
 
 ### Run Specific Test Files
 
 ```bash
 # Unit tests
-pytest tests/test_models.py -v
-pytest tests/test_assertions.py -v
-pytest tests/test_hash.py -v
-pytest tests/test_auth.py -v
+uv run python -m pytest tests/test_models.py -v
+uv run python -m pytest tests/test_assertions.py -v
+uv run python -m pytest tests/test_hash.py -v
+uv run python -m pytest tests/test_auth.py -v
 
 # Integration tests
-pytest tests/test_cli_integration.py -v
-pytest tests/test_providers_integration.py -v
+uv run python -m pytest tests/test_cli_integration.py -v
+uv run python -m pytest tests/test_providers_integration.py -v
 ```
 
 ### Run Specific Test Classes
 
 ```bash
-pytest tests/test_cli_integration.py::TestAuthCommands -v
-pytest tests/test_providers_integration.py::TestOpenAIProvider -v
+uv run python -m pytest tests/test_cli_integration.py::TestAuthCommands -v
+uv run python -m pytest tests/test_providers_integration.py::TestOpenAIProvider -v
 ```
 
 ### Run with Coverage
 
 ```bash
-pytest tests/ --cov=pramana --cov-report=html
+uv run python -m pytest tests/ --cov=pramana --cov-report=html
 open htmlcov/index.html
 ```
 
@@ -118,20 +118,21 @@ jobs:
         python-version: ["3.11", "3.12"]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+        run: uv sync --extra dev --system
 
       - name: Run tests
-        run: pytest tests/ -v --cov=pramana
+        run: uv run python -m pytest tests/ -v --cov=pramana
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3
@@ -187,13 +188,13 @@ def test_new_command():
 
 ```bash
 # Run single test with full output
-pytest tests/test_cli_integration.py::TestAuthCommands::test_login_opens_browser -vvs
+uv run python -m pytest tests/test_cli_integration.py::TestAuthCommands::test_login_opens_browser -vvs
 
 # Run with debugger on failure
-pytest tests/ --pdb
+uv run python -m pytest tests/ --pdb
 
 # Show print statements
-pytest tests/ -s
+uv run python -m pytest tests/ -s
 ```
 
 ## Test Best Practices

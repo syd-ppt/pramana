@@ -65,20 +65,20 @@ Test cases are the core of Pramana. High-quality, diverse tests improve drift de
 ```bash
 git clone https://github.com/syd-ppt/pramana
 cd pramana
-uv pip install -e ".[dev]"
+uv sync --extra dev
 ```
 
 ### Development
 
 ```bash
 # Run tests
-pytest tests/
+uv run python -m pytest tests/
 
 # Lint
-ruff check .
+uv run ruff check .
 
 # Format
-ruff format .
+uv run ruff format .
 ```
 
 ### PR Guidelines

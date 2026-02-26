@@ -11,7 +11,7 @@ assignees: ''
 - **Python version:** `python --version`
 - **Pramana version:** `pramana --version`
 - **OS:** (e.g., Ubuntu 24.04, macOS 15, Windows 11 WSL2)
-- **Install method:** `pip install pramana` / `uv pip install -e ".[dev]"`
+- **Install method:** `uvx pramana-ai` / `uv sync --extra dev` (dev)
 
 ## Command
 
